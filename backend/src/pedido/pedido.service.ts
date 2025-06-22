@@ -217,4 +217,25 @@ export class PedidosService {
       data: { cantidad, total, fecha_modificacion: new Date() },
     });
   }
+
+
+  async getPedidosPorCliente(clienteId: number) {
+  const pedidos = await this.prisma.ped_pedidos_cliente.findMany({
+    where: {
+      cliente_id: clienteId,
+      estado: true,
+    },
+    include: {
+      ped_pedidos_cliente_det: true,
+      prd_productos: true,
+    },
+    orderBy: {
+      fecha_pedido: 'desc',
+    },
+  });
+
+  return pedidos;
+}
+
+
 }

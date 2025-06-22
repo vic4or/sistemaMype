@@ -77,4 +77,12 @@ import {
     ) {
       return this.pedidosService.removeDetalle(id, detalleId);
     }
+
+
+    @Get('cliente/:clienteId')
+    getPedidosPorCliente(@Param('clienteId', ParseIntPipe) clienteId: number) {
+      return this.pedidosService.getPedidosPorCliente(clienteId);
+    }
+
+
   }

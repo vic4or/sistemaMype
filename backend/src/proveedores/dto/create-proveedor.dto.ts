@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsEmail, IsBoolean } from 'class-validator'
+import { IsOptional, IsString, IsEmail, IsBoolean, IsInt } from 'class-validator'
 
 export class CreateProveedorDto {
   @IsOptional()
@@ -24,4 +24,8 @@ export class CreateProveedorDto {
   @IsOptional()
   @IsString()
   usuario_creacion?: string
+
+  @IsOptional()
+  @IsInt()
+  lead_time_dias?: number;
 }

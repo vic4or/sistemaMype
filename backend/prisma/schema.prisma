@@ -1,0 +1,452 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model cfg_categorias_material {
+  categoria_material_id        Int                            @id @default(autoincrement())
+  nombre_categoria             String?                        @db.VarChar(50)
+  descripcion                  String?                        @db.VarChar(100)
+  tiene_color                  Boolean?                       @default(false)
+  tiene_talla                  Boolean?                       @default(false)
+  varia_cantidad_por_talla     Boolean?                       @default(false)
+  varia_insumo_por_color       Boolean?                       @default(false)
+  estado                       Boolean?                       @default(true)
+  fecha_creacion               DateTime?                      @default(now()) @db.Timestamp(6)
+  usuario_creacion             String?                        @db.VarChar(50)
+  fecha_modificacion           DateTime?                      @default(now()) @db.Timestamp(6)
+  usuario_modificacion         String?                        @db.VarChar(50)
+  tiene_merma                  Boolean?                       @default(false)
+  porcentaje_merma             Decimal?                       @db.Decimal(5, 2)
+  cfg_presentaciones_categoria cfg_presentaciones_categoria[]
+  mat_materiales               mat_materiales[]
+}
+
+model cfg_colores {
+  color_id                 Int                        @id @default(autoincrement())
+  nombre_color             String?                    @db.VarChar(30)
+  codigo_color             String?                    @db.VarChar(10)
+  estado                   Boolean?                   @default(true)
+  fecha_creacion           DateTime?                  @default(now()) @db.Timestamp(6)
+  usuario_creacion         String?                    @db.VarChar(50)
+  fecha_modificacion       DateTime?                  @default(now()) @db.Timestamp(6)
+  usuario_modificacion     String?                    @db.VarChar(50)
+  mat_materiales           mat_materiales[]
+  prd_producto_talla_color prd_producto_talla_color[]
+}
+
+model cfg_tallas {
+  talla_id                 Int                        @id @default(autoincrement())
+  valor_talla              String?                    @db.VarChar(10)
+  estado                   Boolean?                   @default(true)
+  fecha_creacion           DateTime?                  @default(now()) @db.Timestamp(6)
+  usuario_creacion         String?                    @db.VarChar(50)
+  fecha_modificacion       DateTime?                  @default(now()) @db.Timestamp(6)
+  usuario_modificacion     String?                    @db.VarChar(50)
+  mat_materiales           mat_materiales[]
+  ped_def_tizado_tallas    ped_def_tizado_tallas[]
+  prd_producto_talla_color prd_producto_talla_color[]
+}
+
+model cfg_unidades_medida {
+  unidad_medida_id                                                                                 Int                            @id @default(autoincrement())
+  nombre_unidad                                                                                    String?                        @db.VarChar(30)
+  abreviatura                                                                                      String?                        @db.VarChar(10)
+  estado                                                                                           Boolean?                       @default(true)
+  fecha_creacion                                                                                   DateTime?                      @default(now()) @db.Timestamp(6)
+  usuario_creacion                                                                                 String?                        @db.VarChar(50)
+  fecha_modificacion                                                                               DateTime?                      @default(now()) @db.Timestamp(6)
+  usuario_modificacion                                                                             String?                        @db.VarChar(50)
+  cfg_presentaciones_categoria_cfg_presentaciones_categoria_unidad_compra_idTocfg_unidades_medida  cfg_presentaciones_categoria[] @relation("cfg_presentaciones_categoria_unidad_compra_idTocfg_unidades_medida")
+  cfg_presentaciones_categoria_cfg_presentaciones_categoria_unidad_consumo_idTocfg_unidades_medida cfg_presentaciones_categoria[] @relation("cfg_presentaciones_categoria_unidad_consumo_idTocfg_unidades_medida")
+  cmp_sugerencias_compra_det                                                                       cmp_sugerencias_compra_det[]
+  mat_materiales_mat_materiales_unidad_consumo_idTocfg_unidades_medida                             mat_materiales[]               @relation("mat_materiales_unidad_consumo_idTocfg_unidades_medida")
+  mat_materiales                                                                                   mat_materiales[]
+  prd_bom_items_base                                                                               prd_bom_items_base[]
+  prd_bom_variaciones                                                                              prd_bom_variaciones[]
+}
+
+model cli_clientes {
+  cliente_id           Int                   @id @default(autoincrement())
+  nombre               String?               @db.VarChar(100)
+  ruc                  String?               @db.VarChar(20)
+  direccion            String?               @db.VarChar(80)
+  telefono             String?               @db.VarChar(20)
+  email                String?               @db.VarChar(50)
+  estado               Boolean?              @default(true)
+  fecha_creacion       DateTime?             @default(now()) @db.Timestamp(6)
+  usuario_creacion     String?               @db.VarChar(50)
+  fecha_modificacion   DateTime?             @default(now()) @db.Timestamp(6)
+  usuario_modificacion String?               @db.VarChar(50)
+  ped_pedidos_cliente  ped_pedidos_cliente[]
+}
+
+model cmp_corridas_planificacion {
+  corrida_plan_id                   Int                                 @id @default(autoincrement())
+  fecha_ejecucion_plan              DateTime?                           @db.Date
+  estado                            Boolean?                            @default(true)
+  fecha_creacion                    DateTime?                           @default(now()) @db.Timestamp(6)
+  usuario_creacion                  String?                             @db.VarChar(50)
+  fecha_modificacion                DateTime?                           @default(now()) @db.Timestamp(6)
+  usuario_modificacion              String?                             @db.VarChar(50)
+  cmp_corridas_planificacion_pedido cmp_corridas_planificacion_pedido[]
+  cmp_plan_necesidades_brutas       cmp_plan_necesidades_brutas[]
+  cmp_sugerencias_compra_det        cmp_sugerencias_compra_det[]
+}
+
+model cmp_corridas_planificacion_pedido {
+  corrida_plan__pedido_id    Int                         @id @default(autoincrement())
+  corrida_plan_id            Int?
+  pedido_cliente_id          Int?
+  estado                     Boolean?                    @default(true)
+  fecha_creacion             DateTime?                   @default(now()) @db.Timestamp(6)
+  usuario_creacion           String?                     @db.VarChar(50)
+  fecha_modificacion         DateTime?                   @default(now()) @db.Timestamp(6)
+  usuario_modificacion       String?                     @db.VarChar(50)
+  cmp_corridas_planificacion cmp_corridas_planificacion? @relation(fields: [corrida_plan_id], references: [corrida_plan_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_cmp_corridas_planificacion_pedido_corrida_plan_id")
+  ped_pedidos_cliente        ped_pedidos_cliente?        @relation(fields: [pedido_cliente_id], references: [pedido_cliente_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_cmp_corridas_planificacion_pedido_pedido_cliente_id")
+}
+
+model cmp_ordenes_compra {
+  orden_compra_id        Int                      @id @default(autoincrement())
+  proveedor_id           Int?
+  numero_oc              String?                  @db.VarChar(20)
+  fecha_emision_oc       DateTime?                @db.Date
+  fecha_esperada         DateTime?                @db.Date
+  estado_oc              String?                  @db.VarChar(20)
+  monto_total_oc         Decimal?                 @db.Decimal(8, 3)
+  nota                   String?                  @db.VarChar(200)
+  estado                 Boolean?                 @default(true)
+  fecha_creacion         DateTime?                @default(now()) @db.Timestamp(6)
+  usuario_creacion       String?                  @db.VarChar(50)
+  fecha_modificacion     DateTime?                @default(now()) @db.Timestamp(6)
+  usuario_modificacion   String?                  @db.VarChar(50)
+  pro_proveedores        pro_proveedores?         @relation(fields: [proveedor_id], references: [proveedor_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_cmp_ordenes_compra_proveedor_id")
+  cmp_ordenes_compra_det cmp_ordenes_compra_det[]
+}
+
+model cmp_ordenes_compra_det {
+  oc_detalle_id              Int                          @id @default(autoincrement())
+  orden_compra_id            Int?
+  material_id                Int?
+  cantidad_pedida            Decimal?                     @db.Decimal(8, 3)
+  precio_unitario            Decimal?                     @db.Decimal(8, 3)
+  subtotal                   Decimal?                     @db.Decimal(8, 3)
+  cantidad_recibida          Decimal?                     @db.Decimal(8, 3)
+  estado_linea_oc            String?                      @db.VarChar(20)
+  nota_discrepancia          String?                      @db.VarChar(200)
+  estado                     Boolean?                     @default(true)
+  fecha_creacion             DateTime?                    @default(now()) @db.Timestamp(6)
+  usuario_creacion           String?                      @db.VarChar(50)
+  fecha_modificacion         DateTime?                    @default(now()) @db.Timestamp(6)
+  usuario_modificacion       String?                      @db.VarChar(50)
+  mat_materiales             mat_materiales?              @relation(fields: [material_id], references: [material_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_cmp_ordenes_compra_det_material_id")
+  cmp_ordenes_compra         cmp_ordenes_compra?          @relation(fields: [orden_compra_id], references: [orden_compra_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_cmp_ordenes_compra_det_orden_compra_id")
+  cmp_sugerencias_compra_det cmp_sugerencias_compra_det[]
+  inv_movimientos_stock      inv_movimientos_stock[]
+}
+
+model cmp_plan_necesidades_brutas {
+  plan_nec_bruta_id          Int                         @id @default(autoincrement())
+  corrida_plan_id            Int?
+  fk_material_id             Int?
+  necesidad_bruta            Decimal?                    @db.Decimal(8, 3)
+  estado                     Boolean?                    @default(true)
+  fecha_creacion             DateTime?                   @default(now()) @db.Timestamp(6)
+  usuario_creacion           String?                     @db.VarChar(50)
+  fecha_modificacion         DateTime?                   @default(now()) @db.Timestamp(6)
+  usuario_modificacion       String?                     @db.VarChar(50)
+  cmp_corridas_planificacion cmp_corridas_planificacion? @relation(fields: [corrida_plan_id], references: [corrida_plan_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_cmp_plan_necesidades_brutas_corrida_plan_id")
+  mat_materiales             mat_materiales?             @relation(fields: [fk_material_id], references: [material_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_cmp_plan_necesidades_brutas_material_id")
+}
+
+model cmp_sugerencias_compra_det {
+  sugerencia_det_id          Int                         @id @default(autoincrement())
+  corrida_plan_id            Int?
+  material_id                Int?
+  unidad_medida_id           Int?
+  proveedor_id               Int?
+  cantidad_neta_sugerida     Decimal?                    @db.Decimal(4, 3)
+  fecha_sugerida_ordenar     DateTime?                   @db.Date
+  fecha_estimada_llegada     DateTime?                   @db.Date
+  oc_detalle_id_generada     Int?
+  estado_det_sugerencia      String?                     @db.VarChar(20)
+  estado                     Boolean?                    @default(true)
+  fecha_creacion             DateTime?                   @default(now()) @db.Timestamp(6)
+  usuario_creacion           String?                     @db.VarChar(50)
+  fecha_modificacion         DateTime?                   @default(now()) @db.Timestamp(6)
+  usuario_modificacion       String?                     @db.VarChar(50)
+  cmp_corridas_planificacion cmp_corridas_planificacion? @relation(fields: [corrida_plan_id], references: [corrida_plan_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_cmp_sugerencias_compra_det_corrida_plan_id")
+  mat_materiales             mat_materiales?             @relation(fields: [material_id], references: [material_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_cmp_sugerencias_compra_det_material_id")
+  cmp_ordenes_compra_det     cmp_ordenes_compra_det?     @relation(fields: [oc_detalle_id_generada], references: [oc_detalle_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_cmp_sugerencias_compra_det_oc_detalle_id_generada")
+  pro_proveedores            pro_proveedores?            @relation(fields: [proveedor_id], references: [proveedor_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_cmp_sugerencias_compra_det_proveedor_id")
+  cfg_unidades_medida        cfg_unidades_medida?        @relation(fields: [unidad_medida_id], references: [unidad_medida_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_cmp_sugerencias_compra_det_unidad_medida_id")
+}
+
+model inv_movimientos_stock {
+  movimiento_id          Int                     @id @default(autoincrement())
+  material_id            Int?
+  fecha_movimiento       DateTime?               @db.Date
+  tipo_movimiento        String?                 @db.VarChar(20)
+  cantidad_movimiento    Decimal?                @db.Decimal(8, 3)
+  oc_detalle_id          Int?
+  stock_anterior         Decimal?                @db.Decimal(8, 3)
+  stock_nuevo            Decimal?                @db.Decimal(8, 3)
+  estado                 Boolean?                @default(true)
+  fecha_creacion         DateTime?               @default(now()) @db.Timestamp(6)
+  usuario_creacion       String?                 @db.VarChar(50)
+  fecha_modificacion     DateTime?               @default(now()) @db.Timestamp(6)
+  usuario_modificacion   String?                 @db.VarChar(50)
+  mat_materiales         mat_materiales?         @relation(fields: [material_id], references: [material_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inv_movimientos_stock_material_id")
+  cmp_ordenes_compra_det cmp_ordenes_compra_det? @relation(fields: [oc_detalle_id], references: [oc_detalle_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inv_movimientos_stock_oc_detalle_id")
+}
+
+model mat_materiales {
+  material_id                                                               Int                           @id @default(autoincrement())
+  categoria_material_id                                                     Int?
+  unidad_medida_id                                                          Int?
+  talla_id                                                                  Int?
+  color_id                                                                  Int?
+  codigo_material                                                           String?                       @db.VarChar(50)
+  stock_actual                                                              Decimal?                      @db.Decimal(8, 3)
+  descripcion_material                                                      String?                       @db.VarChar(100)
+  ancho_tela_metros                                                         Decimal?                      @db.Decimal(8, 3)
+  rendimiento_tela                                                          Decimal?                      @db.Decimal(8, 3)
+  tipo_tejido_tela                                                          String?                       @db.VarChar(50)
+  estado                                                                    Boolean?                      @default(true)
+  fecha_creacion                                                            DateTime?                     @default(now()) @db.Timestamp(6)
+  usuario_creacion                                                          String?                       @db.VarChar(50)
+  fecha_modificacion                                                        DateTime?                     @default(now()) @db.Timestamp(6)
+  usuario_modificacion                                                      String?                       @db.VarChar(50)
+  unidad_consumo_id                                                         Int?
+  factor_conversion_compra                                                  Decimal?                      @db.Decimal(10, 4)
+  cmp_ordenes_compra_det                                                    cmp_ordenes_compra_det[]
+  cmp_plan_necesidades_brutas                                               cmp_plan_necesidades_brutas[]
+  cmp_sugerencias_compra_det                                                cmp_sugerencias_compra_det[]
+  inv_movimientos_stock                                                     inv_movimientos_stock[]
+  cfg_categorias_material                                                   cfg_categorias_material?      @relation(fields: [categoria_material_id], references: [categoria_material_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_mat_materiales_categoria_material_id")
+  cfg_colores                                                               cfg_colores?                  @relation(fields: [color_id], references: [color_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_mat_materiales_color_id")
+  cfg_tallas                                                                cfg_tallas?                   @relation(fields: [talla_id], references: [talla_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_mat_materiales_talla_id")
+  cfg_unidades_medida_mat_materiales_unidad_consumo_idTocfg_unidades_medida cfg_unidades_medida?          @relation("mat_materiales_unidad_consumo_idTocfg_unidades_medida", fields: [unidad_consumo_id], references: [unidad_medida_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_mat_materiales_unidad_consumo_id")
+  cfg_unidades_medida                                                       cfg_unidades_medida?          @relation(fields: [unidad_medida_id], references: [unidad_medida_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_mat_materiales_unidad_medida_id")
+  mat_materiales_prov                                                       mat_materiales_prov[]
+  prd_bom_items_base                                                        prd_bom_items_base[]
+  prd_bom_variaciones                                                       prd_bom_variaciones[]
+}
+
+model mat_materiales_prov {
+  mat_prov_id          Int              @id @default(autoincrement())
+  material_id          Int?
+  proveedor_id         Int?
+  moq_proveedor        Decimal?         @db.Decimal(8, 3)
+  precio_compra        Decimal?         @db.Decimal(8, 3)
+  estado               Boolean?         @default(true)
+  fecha_creacion       DateTime?        @default(now()) @db.Timestamp(6)
+  usuario_creacion     String?          @db.VarChar(50)
+  fecha_modificacion   DateTime?        @default(now()) @db.Timestamp(6)
+  usuario_modificacion String?          @db.VarChar(50)
+  mat_materiales       mat_materiales?  @relation(fields: [material_id], references: [material_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_mat_materiales_prov_material_id")
+  pro_proveedores      pro_proveedores? @relation(fields: [proveedor_id], references: [proveedor_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_mat_materiales_prov_proveedor_id")
+}
+
+model ped_def_tizado_tallas {
+  def_tizado_talla_id     Int                      @id @default(autoincrement())
+  definicion_tizado_id    Int?
+  talla_id                Int?
+  cant_prendas_tendida    Int?
+  estado                  Boolean?                 @default(true)
+  fecha_creacion          DateTime?                @default(now()) @db.Timestamp(6)
+  usuario_creacion        String?                  @db.VarChar(50)
+  fecha_modificacion      DateTime?                @default(now()) @db.Timestamp(6)
+  usuario_modificacion    String?                  @db.VarChar(50)
+  ped_definiciones_tizado ped_definiciones_tizado? @relation(fields: [definicion_tizado_id], references: [definicion_tizado_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_ped_def_tizado_tallas_definicion_tizado_id")
+  cfg_tallas              cfg_tallas?              @relation(fields: [talla_id], references: [talla_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_ped_def_tizado_tallas_talla_id")
+}
+
+model ped_definiciones_tizado {
+  definicion_tizado_id  Int                     @id @default(autoincrement())
+  pedido_cliente_id     Int?
+  descripcion_tizado    String?                 @db.VarChar(100)
+  ancho_tela_ref_metros Decimal?                @db.Decimal(4, 3)
+  longitud_tela_metros  Decimal?                @db.Decimal(4, 3)
+  ref_imagen            String?                 @db.VarChar(100)
+  estado                Boolean?                @default(true)
+  fecha_creacion        DateTime?               @default(now()) @db.Timestamp(6)
+  usuario_creacion      String?                 @db.VarChar(50)
+  fecha_modificacion    DateTime?               @default(now()) @db.Timestamp(6)
+  usuario_modificacion  String?                 @db.VarChar(50)
+  ped_def_tizado_tallas ped_def_tizado_tallas[]
+  ped_pedidos_cliente   ped_pedidos_cliente?    @relation(fields: [pedido_cliente_id], references: [pedido_cliente_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_ped_definiciones_tizado_pedido_cliente_id")
+}
+
+model ped_pedidos_cliente {
+  pedido_cliente_id                 Int                                 @id @default(autoincrement())
+  cliente_id                        Int?
+  producto_id                       Int?
+  codigo_pedido                     String?                             @db.VarChar(20)
+  fecha_pedido                      DateTime?                           @db.Date
+  fecha_entrega                     DateTime?                           @db.Date
+  estado_pedido                     String?                             @db.VarChar(30)
+  direccion_envio                   String?                             @db.VarChar(80)
+  cantidad                          Int?
+  total                             Decimal?                            @db.Decimal(8, 3)
+  observaciones                     String?                             @db.VarChar(100)
+  estado                            Boolean?                            @default(true)
+  fecha_creacion                    DateTime?                           @default(now()) @db.Timestamp(6)
+  usuario_creacion                  String?                             @db.VarChar(50)
+  fecha_modificacion                DateTime?                           @default(now()) @db.Timestamp(6)
+  usuario_modificacion              String?                             @db.VarChar(50)
+  cmp_corridas_planificacion_pedido cmp_corridas_planificacion_pedido[]
+  ped_definiciones_tizado           ped_definiciones_tizado[]
+  cli_clientes                      cli_clientes?                       @relation(fields: [cliente_id], references: [cliente_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_ped_pedidos_cliente_cliente_id")
+  prd_productos                     prd_productos?                      @relation(fields: [producto_id], references: [producto_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_ped_pedidos_cliente_producto_id")
+  ped_pedidos_cliente_det           ped_pedidos_cliente_det[]
+}
+
+model ped_pedidos_cliente_det {
+  ped_cliente_det_id       Int                       @id @default(autoincrement())
+  pedido_cliente_id        Int?
+  producto_tal_col_id      Int?
+  cantidad_solicitada      Int?
+  precio                   Decimal?                  @db.Decimal(8, 3)
+  subtotal                 Decimal?                  @db.Decimal(8, 3)
+  estado                   Boolean?                  @default(true)
+  fecha_creacion           DateTime?                 @default(now()) @db.Timestamp(6)
+  usuario_creacion         String?                   @db.VarChar(50)
+  fecha_modificacion       DateTime?                 @default(now()) @db.Timestamp(6)
+  usuario_modificacion     String?                   @db.VarChar(50)
+  ped_pedidos_cliente      ped_pedidos_cliente?      @relation(fields: [pedido_cliente_id], references: [pedido_cliente_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_ped_pedidos_cliente_det_pedido_cliente_id")
+  prd_producto_talla_color prd_producto_talla_color? @relation(fields: [producto_tal_col_id], references: [producto_tal_col_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_ped_pedidos_cliente_det_producto_tal_col_id")
+}
+
+model prd_bom_items_base {
+  bom_item_id           Int                  @id @default(autoincrement())
+  producto_id           Int?
+  material_id           Int?
+  unidad_medida_id      Int?
+  cantidad_consumo_base Decimal?             @db.Decimal(8, 3)
+  estado                Boolean?             @default(true)
+  fecha_creacion        DateTime?            @default(now()) @db.Timestamp(6)
+  usuario_creacion      String?              @db.VarChar(50)
+  fecha_modificacion    DateTime?            @default(now()) @db.Timestamp(6)
+  usuario_modificacion  String?              @db.VarChar(50)
+  mat_materiales        mat_materiales?      @relation(fields: [material_id], references: [material_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_prd_bom_items_base_material_id")
+  prd_productos         prd_productos?       @relation(fields: [producto_id], references: [producto_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_prd_bom_items_base_producto_id")
+  cfg_unidades_medida   cfg_unidades_medida? @relation(fields: [unidad_medida_id], references: [unidad_medida_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_prd_bom_items_base_unidad_medida_id")
+}
+
+model prd_bom_variaciones {
+  bom_variacion_id            Int                       @id @default(autoincrement())
+  producto_tal_col_id         Int?
+  material_id                 Int?
+  unidad_medida_id            Int?
+  cantidad_consumo_especifica Decimal?                  @db.Decimal(8, 3)
+  estado                      Boolean?                  @default(true)
+  fecha_creacion              DateTime?                 @default(now()) @db.Timestamp(6)
+  usuario_creacion            String?                   @db.VarChar(50)
+  fecha_modificacion          DateTime?                 @default(now()) @db.Timestamp(6)
+  usuario_modificacion        String?                   @db.VarChar(50)
+  mat_materiales              mat_materiales?           @relation(fields: [material_id], references: [material_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_prd_bom_variaciones_material_id")
+  prd_producto_talla_color    prd_producto_talla_color? @relation(fields: [producto_tal_col_id], references: [producto_tal_col_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_prd_bom_variaciones_producto_tal_col_id")
+  cfg_unidades_medida         cfg_unidades_medida?      @relation(fields: [unidad_medida_id], references: [unidad_medida_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_prd_bom_variaciones_unidad_medida_id")
+}
+
+model prd_producto_talla_color {
+  producto_tal_col_id     Int                       @id @default(autoincrement())
+  producto_id             Int?
+  color_id                Int?
+  talla_id                Int?
+  codigo                  String?                   @db.VarChar(20)
+  precio_venta            Decimal?                  @db.Decimal(8, 3)
+  estado                  Boolean?                  @default(true)
+  fecha_creacion          DateTime?                 @default(now()) @db.Timestamp(6)
+  usuario_creacion        String?                   @db.VarChar(50)
+  fecha_modificacion      DateTime?                 @default(now()) @db.Timestamp(6)
+  usuario_modificacion    String?                   @db.VarChar(50)
+  ped_pedidos_cliente_det ped_pedidos_cliente_det[]
+  prd_bom_variaciones     prd_bom_variaciones[]
+  cfg_colores             cfg_colores?              @relation(fields: [color_id], references: [color_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_prd_producto_talla_color_color_id")
+  prd_productos           prd_productos?            @relation(fields: [producto_id], references: [producto_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_prd_producto_talla_color_producto_id")
+  cfg_tallas              cfg_tallas?               @relation(fields: [talla_id], references: [talla_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_prd_producto_talla_color_talla_id")
+}
+
+model prd_productos {
+  producto_id              Int                        @id @default(autoincrement())
+  codigo                   String?                    @db.VarChar(20)
+  nombre                   String?                    @db.VarChar(40)
+  estacion                 String?                    @db.VarChar(20)
+  linea                    String?                    @db.VarChar(20)
+  imagen                   String?                    @db.VarChar(255)
+  fecha_creacion           DateTime?                  @default(now()) @db.Timestamp(6)
+  usuario_creacion         String?                    @db.VarChar(50)
+  fecha_modificacion       DateTime?                  @default(now()) @db.Timestamp(6)
+  usuario_modificacion     String?                    @db.VarChar(50)
+  categoria                String?                    @db.VarChar(50)
+  estado                   Boolean?                   @default(true)
+  precio                   Decimal?                   @db.Decimal(8, 3)
+  ped_pedidos_cliente      ped_pedidos_cliente[]
+  prd_bom_items_base       prd_bom_items_base[]
+  prd_producto_talla_color prd_producto_talla_color[]
+}
+
+model pro_proveedores {
+  proveedor_id               Int                          @id @default(autoincrement())
+  razon_social               String?                      @db.VarChar(100)
+  ruc                        String?                      @db.VarChar(20)
+  direccion                  String?                      @db.VarChar(80)
+  telefono                   String?                      @db.VarChar(20)
+  email                      String?                      @db.VarChar(50)
+  estado                     Boolean?                     @default(true)
+  fecha_creacion             DateTime?                    @default(now()) @db.Timestamp(6)
+  usuario_creacion           String?                      @db.VarChar(50)
+  fecha_modificacion         DateTime?                    @default(now()) @db.Timestamp(6)
+  usuario_modificacion       String?                      @db.VarChar(50)
+  lead_time_dias             Int?
+  cmp_ordenes_compra         cmp_ordenes_compra[]
+  cmp_sugerencias_compra_det cmp_sugerencias_compra_det[]
+  mat_materiales_prov        mat_materiales_prov[]
+}
+
+model seg_rol {
+  rol_id               Int           @id @default(autoincrement())
+  nombre_rol           String?       @db.VarChar(30)
+  descripcion          String?       @db.VarChar(200)
+  estado               Boolean?      @default(true)
+  fecha_creacion       DateTime?     @default(now()) @db.Timestamp(6)
+  usuario_creacion     String?       @db.VarChar(50)
+  fecha_modificacion   DateTime?     @default(now()) @db.Timestamp(6)
+  usuario_modificacion String?       @db.VarChar(50)
+  seg_usuario          seg_usuario[]
+}
+
+model seg_usuario {
+  usuario_id           Int       @id @default(autoincrement())
+  rol_id               Int?
+  nombre               String?   @db.VarChar(100)
+  email                String?   @db.VarChar(50)
+  password             String?   @db.VarChar(255)
+  telefono             String?   @db.VarChar(20)
+  ultimo_login         DateTime? @db.Date
+  estado               Boolean?  @default(true)
+  fecha_creacion       DateTime? @default(now()) @db.Timestamp(6)
+  usuario_creacion     String?   @db.VarChar(50)
+  fecha_modificacion   DateTime? @default(now()) @db.Timestamp(6)
+  usuario_modificacion String?   @db.VarChar(50)
+  seg_rol              seg_rol?  @relation(fields: [rol_id], references: [rol_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_seg_usuario_rol_id")
+}
+
+model cfg_presentaciones_categoria {
+  presentacion_id                                                                         Int                     @id @default(autoincrement())
+  categoria_material_id                                                                   Int
+  unidad_compra_id                                                                        Int
+  unidad_consumo_id                                                                       Int
+  cantidad_por_presentacion                                                               Decimal                 @db.Decimal(8, 3)
+  factor_conversion                                                                       Decimal                 @db.Decimal(10, 4)
+  cfg_categorias_material                                                                 cfg_categorias_material @relation(fields: [categoria_material_id], references: [categoria_material_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_categoria")
+  cfg_unidades_medida_cfg_presentaciones_categoria_unidad_compra_idTocfg_unidades_medida  cfg_unidades_medida     @relation("cfg_presentaciones_categoria_unidad_compra_idTocfg_unidades_medida", fields: [unidad_compra_id], references: [unidad_medida_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_unidad_compra")
+  cfg_unidades_medida_cfg_presentaciones_categoria_unidad_consumo_idTocfg_unidades_medida cfg_unidades_medida     @relation("cfg_presentaciones_categoria_unidad_consumo_idTocfg_unidades_medida", fields: [unidad_consumo_id], references: [unidad_medida_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_unidad_consumo")
+}

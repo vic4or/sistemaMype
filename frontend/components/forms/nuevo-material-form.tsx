@@ -362,12 +362,11 @@ export default function NuevoMaterialForm({ onMaterialCreated }: NuevoMaterialFo
                               <Input
                                 type="number"
                                 step="0.01"
-                                placeholder="0.85"
+                                placeholder="1.25"
                                 {...field}
                                 onChange={(e) => field.onChange(parseFloat(e.target.value) || undefined)}
                               />
                             </FormControl>
-                            <FormDescription>Factor de rendimiento (0-1)</FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -379,9 +378,19 @@ export default function NuevoMaterialForm({ onMaterialCreated }: NuevoMaterialFo
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Tipo de Tejido *</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Algodón, Poliéster..." {...field} />
-                            </FormControl>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Seleccionar tipo de tejido" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="Gamuza">Gamuza</SelectItem>
+                                <SelectItem value="Jersey">Jersey</SelectItem>
+                                <SelectItem value="Franela">Franela</SelectItem>
+                                <SelectItem value="French Terry">French Terry</SelectItem>
+                              </SelectContent>
+                            </Select>
                             <FormMessage />
                           </FormItem>
                         )}

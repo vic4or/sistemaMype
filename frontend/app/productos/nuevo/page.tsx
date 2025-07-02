@@ -169,7 +169,7 @@ export default function NuevoProductoPage() {
           producto_id: productoId,
           talla_id: combinacion.tallaId,
           color_id: combinacion.colorId,
-          precio_venta: productoData.precio,
+          precio_venta: productoData.precio.toString(),
           codigo: combinacion.codigo,
           estado: true,
         })
@@ -281,13 +281,13 @@ export default function NuevoProductoPage() {
                     <SelectValue placeholder="Seleccionar categoría" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="polos">Polos</SelectItem>
-                    <SelectItem value="joggers">Joggers</SelectItem>
-                    <SelectItem value="cafarenas">Cafarenas</SelectItem>
-                    <SelectItem value="pantalones">Pantalones</SelectItem>
-                    <SelectItem value="shorts">Shorts</SelectItem>
-                    <SelectItem value="blusas">Blusas</SelectItem>
-                    <SelectItem value="vestidos">Vestidos</SelectItem>
+                    <SelectItem value="Polos">Polos</SelectItem>
+                    <SelectItem value="Joggers">Joggers</SelectItem>
+                    <SelectItem value="Cafarenas">Cafarenas</SelectItem>
+                    <SelectItem value="Pantalones">Pantalones</SelectItem>
+                    <SelectItem value="Shorts">Shorts</SelectItem>
+                    <SelectItem value="Blusas">Blusas</SelectItem>
+                    <SelectItem value="Vestidos">Vestidos</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -301,11 +301,11 @@ export default function NuevoProductoPage() {
                     <SelectValue placeholder="Seleccionar estación" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="verano">Verano</SelectItem>
-                    <SelectItem value="invierno">Invierno</SelectItem>
-                    <SelectItem value="otoño">Otoño</SelectItem>
-                    <SelectItem value="primavera">Primavera</SelectItem>
-                    <SelectItem value="todo-año">Todo el año</SelectItem>
+                    <SelectItem value="Verano">Verano</SelectItem>
+                    <SelectItem value="Invierno">Invierno</SelectItem>
+                    <SelectItem value="Otoño">Otoño</SelectItem>
+                    <SelectItem value="Primavera">Primavera</SelectItem>
+                    <SelectItem value="Todo el año">Todo el año</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -319,9 +319,9 @@ export default function NuevoProductoPage() {
                     <SelectValue placeholder="Seleccionar tipo" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="superior">Superior</SelectItem>
-                    <SelectItem value="inferior">Inferior</SelectItem>
-                    <SelectItem value="completa">Completa</SelectItem>
+                    <SelectItem value="Superior">Superior</SelectItem>
+                    <SelectItem value="Inferior">Inferior</SelectItem>
+                    <SelectItem value="Completa">Completa</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -415,7 +415,7 @@ export default function NuevoProductoPage() {
                       <Label htmlFor={`color-${color.color_id}`} className="flex items-center gap-2">
                         <div
                           className="w-4 h-4 rounded-full border"
-                          style={{ backgroundColor: color.codigo_color }}
+                          style={{ backgroundColor: color.codigo_hex }}
                         />
                         {color.nombre_color}
                       </Label>
@@ -446,7 +446,7 @@ export default function NuevoProductoPage() {
                                 className="w-4 h-4 rounded-full border"
                                 style={{
                                   backgroundColor:
-                                    colores.find((c) => c.color_id === combinacion.colorId)?.codigo_color,
+                                    colores.find((c) => c.color_id === combinacion.colorId)?.codigo_hex,
                                 }}
                               />
                               {combinacion.colorNombre}

@@ -348,26 +348,7 @@ export default function BOMPaso1MaterialesComunes() {
             <Package className="h-5 w-5 text-blue-600 mt-0.5" />
             <div>
               <h4 className="font-medium text-blue-900">Materiales Comunes (BOM Base por Categoría)</h4>
-              <div className="text-sm text-blue-800 mt-1 space-y-1">
-                <p>Seleccione categorías de materiales comunes y configure sus cantidades base.</p>
-                <p className="text-yellow-800">
-                  <strong>📋 Este paso NO GUARDA al backend.</strong> Los datos se mantienen en memoria hasta "Finalizar BOM".
-                </p>
-                <p>
-                  <strong>Comportamiento según categoría:</strong>
-                </p>
-                <ul className="list-disc list-inside ml-4 space-y-1">
-                  <li>
-                    <strong>Sin talla/color:</strong> Dropdown específico + cantidad fija
-                  </li>
-                  <li>
-                    <strong>Con talla:</strong> Solo cantidad (match automático por TALLA_ID)
-                  </li>
-                  <li>
-                    <strong>Con color:</strong> Restringido desde la lógica
-                  </li>
-                </ul>
-              </div>
+              <p className="text-sm text-blue-800 mt-1">Seleccione categorías de materiales comunes y configure sus cantidades base.</p>
             </div>
           </div>
         </CardContent>

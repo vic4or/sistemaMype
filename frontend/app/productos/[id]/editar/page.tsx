@@ -97,7 +97,7 @@ export default function EditarProductoPage({ params }: { params: { id: string } 
           colorId: combinacion.color_id || 0,
           tallaNombre: tallasData.find(t => t.talla_id === combinacion.talla_id)?.valor_talla || "",
           colorNombre: coloresData.find(c => c.color_id === combinacion.color_id)?.nombre_color || "",
-          precio_venta: combinacion.precio_venta || 0,
+          precio_venta: typeof combinacion.precio_venta === 'string' ? parseFloat(combinacion.precio_venta) : (combinacion.precio_venta || 0),
           estado: combinacion.estado ?? true,
         }))
         setCombinaciones(combinacionesIniciales)
@@ -183,7 +183,7 @@ export default function EditarProductoPage({ params }: { params: { id: string } 
       await Promise.all(
         combinacionesAActualizar.map(combinacion =>
           productosApi.updateCombinacion(combinacion.producto_tal_col_id, {
-            precio_venta: productoData.precio
+            precio_venta: productoData.precio.toString()
           })
         )
       )
@@ -191,25 +191,33 @@ export default function EditarProductoPage({ params }: { params: { id: string } 
       const existentes = new Set(
         combinacionesExistentes.map(c => `${c.talla_id}-${c.color_id}`)
       )
-      const nuevasCombinaciones = tallasSeleccionadas.flatMap(tallaId =>
-        coloresSeleccionados.map(colorId => {
+      const nuevasCombinaciones: Array<{
+        producto_id: number
+        talla_id: number
+        color_id: number
+        precio_venta: string
+        codigo: string
+        estado: boolean
+      }> = []
+      
+      tallasSeleccionadas.forEach(tallaId => {
+        coloresSeleccionados.forEach(colorId => {
           const key = `${tallaId}-${colorId}`
           if (!existentes.has(key)) {
             const talla = tallas.find(t => t.talla_id === tallaId)
             const color = colores.find(c => c.color_id === colorId)
             const codigo = `${productoData.codigo}-${talla?.valor_talla}-${(color?.nombre_color || "").substring(0,3).toUpperCase()}`
-            return {
+            nuevasCombinaciones.push({
               producto_id: Number(params.id),
               talla_id: tallaId,
               color_id: colorId,
-              precio_venta: productoData.precio,
+              precio_venta: productoData.precio.toString(),
               codigo,
               estado: true,
-            }
+            })
           }
-          return null
         })
-      ).filter((c): c is { producto_id: number; talla_id: number; color_id: number; precio_venta: number; codigo: string; estado: boolean } => c !== null)
+      })
       await Promise.all(
         nuevasCombinaciones.map(combinacion =>
           productosApi.createCombinacion(combinacion)
@@ -320,13 +328,13 @@ export default function EditarProductoPage({ params }: { params: { id: string } 
                     <SelectValue placeholder="Seleccionar categoría" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="polos">Polos</SelectItem>
-                    <SelectItem value="joggers">Joggers</SelectItem>
-                    <SelectItem value="cafarenas">Cafarenas</SelectItem>
-                    <SelectItem value="pantalones">Pantalones</SelectItem>
-                    <SelectItem value="shorts">Shorts</SelectItem>
-                    <SelectItem value="blusas">Blusas</SelectItem>
-                    <SelectItem value="vestidos">Vestidos</SelectItem>
+                    <SelectItem value="Polos">Polos</SelectItem>
+                    <SelectItem value="Joggers">Joggers</SelectItem>
+                    <SelectItem value="Cafarenas">Cafarenas</SelectItem>
+                    <SelectItem value="Pantalones">Pantalones</SelectItem>
+                    <SelectItem value="Shorts">Shorts</SelectItem>
+                    <SelectItem value="Blusas">Blusas</SelectItem>
+                    <SelectItem value="Vestidos">Vestidos</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -340,11 +348,11 @@ export default function EditarProductoPage({ params }: { params: { id: string } 
                     <SelectValue placeholder="Seleccionar estación" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="verano">Verano</SelectItem>
-                    <SelectItem value="invierno">Invierno</SelectItem>
-                    <SelectItem value="otoño">Otoño</SelectItem>
-                    <SelectItem value="primavera">Primavera</SelectItem>
-                    <SelectItem value="todo-año">Todo el año</SelectItem>
+                    <SelectItem value="Verano">Verano</SelectItem>
+                    <SelectItem value="Invierno">Invierno</SelectItem>
+                    <SelectItem value="Otoño">Otoño</SelectItem>
+                    <SelectItem value="Primavera">Primavera</SelectItem>
+                    <SelectItem value="Todo el año">Todo el año</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -358,9 +366,9 @@ export default function EditarProductoPage({ params }: { params: { id: string } 
                     <SelectValue placeholder="Seleccionar tipo" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="superior">Superior</SelectItem>
-                    <SelectItem value="inferior">Inferior</SelectItem>
-                    <SelectItem value="completa">Completa</SelectItem>
+                    <SelectItem value="Superior">Superior</SelectItem>
+                    <SelectItem value="Inferior">Inferior</SelectItem>
+                    <SelectItem value="Completa">Completa</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -464,7 +472,7 @@ export default function EditarProductoPage({ params }: { params: { id: string } 
                       <Label htmlFor={`color-${color.color_id}`} className="flex items-center gap-2">
                         <div
                           className="w-4 h-4 rounded-full border"
-                          style={{ backgroundColor: color.codigo_color }}
+                          style={{ backgroundColor: color.codigo_hex }}
                         />
                         {color.nombre_color}
                       </Label>
@@ -496,7 +504,7 @@ export default function EditarProductoPage({ params }: { params: { id: string } 
                                 className="w-4 h-4 rounded-full border"
                                 style={{
                                   backgroundColor:
-                                    colores.find((c) => c.color_id === combinacion.colorId)?.codigo_color,
+                                    colores.find((c) => c.color_id === combinacion.colorId)?.codigo_hex,
                                 }}
                               />
                               {combinacion.colorNombre}

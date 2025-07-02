@@ -98,7 +98,9 @@ export default function ProductosPage() {
   const getCategoriaLabel = (categoria: string | undefined) => {
     if (!categoria) return "Sin categoría"
     
+    // Los valores ahora vienen capitalizados desde los formularios
     const labels: Record<string, string> = {
+      // Soporte para valores antiguos en minúsculas (backward compatibility)
       polos: "Polos",
       joggers: "Joggers",
       cafarenas: "Cafarenas",
@@ -106,6 +108,14 @@ export default function ProductosPage() {
       shorts: "Shorts",
       blusas: "Blusas",
       vestidos: "Vestidos",
+      // Valores nuevos capitalizados
+      Polos: "Polos",
+      Joggers: "Joggers",
+      Cafarenas: "Cafarenas",
+      Pantalones: "Pantalones",
+      Shorts: "Shorts",
+      Blusas: "Blusas",
+      Vestidos: "Vestidos",
     }
     return labels[categoria] || categoria
   }
@@ -113,12 +123,20 @@ export default function ProductosPage() {
   const getEstacionLabel = (estacion: string | undefined) => {
     if (!estacion) return "Sin estación"
     
+    // Los valores ahora vienen capitalizados desde los formularios
     const labels: Record<string, string> = {
+      // Soporte para valores antiguos en minúsculas (backward compatibility)
       verano: "Verano",
       invierno: "Invierno",
       otoño: "Otoño",
       primavera: "Primavera",
       "todo-año": "Todo el año",
+      // Valores nuevos capitalizados
+      Verano: "Verano",
+      Invierno: "Invierno",
+      Otoño: "Otoño",
+      Primavera: "Primavera",
+      "Todo el año": "Todo el año",
     }
     return labels[estacion] || estacion
   }
@@ -126,10 +144,16 @@ export default function ProductosPage() {
   const getLineaLabel = (linea: string | undefined) => {
     if (!linea) return "Sin línea"
     
+    // Los valores ahora vienen capitalizados desde los formularios
     const labels: Record<string, string> = {
+      // Soporte para valores antiguos en minúsculas (backward compatibility)
       superior: "Superior",
       inferior: "Inferior",
       completa: "Completa",
+      // Valores nuevos capitalizados
+      Superior: "Superior",
+      Inferior: "Inferior",
+      Completa: "Completa",
     }
     return labels[linea] || linea
   }

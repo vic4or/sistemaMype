@@ -60,11 +60,19 @@ export default function BOMPaso3ConsumoPorTalla() {
     construirMatrizCategorias()
   }, [categoriasConfiguradas])
 
-  // Obtener tallas únicas del producto
+  // Obtener tallas únicas del producto (ordenadas de mayor a menor)
   const tallasProducto = useMemo(() => {
     const tallasUnicas = Array.from(new Set(combinaciones.map(c => c.cfg_tallas?.valor_talla)))
       .filter((talla): talla is string => talla !== undefined)
-      .sort()
+      .sort((a, b) => {
+        // Ordenar de mayor a menor (numérico si es posible, alfanumérico en caso contrario)
+        const numA = parseInt(a)
+        const numB = parseInt(b)
+        if (!isNaN(numA) && !isNaN(numB)) {
+          return numB - numA // Mayor a menor
+        }
+        return b.localeCompare(a) // Alfabéticamente de mayor a menor
+      })
     return tallasUnicas
   }, [combinaciones])
 
@@ -262,22 +270,16 @@ export default function BOMPaso3ConsumoPorTalla() {
   return (
     <div className="space-y-6">
       {/* Explicación */}
-      <Card className="bg-green-50 border-green-200">
+      <Card className="bg-blue-50 border-blue-200">
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
-            <Ruler className="h-5 w-5 text-green-600 mt-0.5" />
+            <Ruler className="h-5 w-5 text-blue-600 mt-0.5" />
             <div>
-              <h4 className="font-medium text-green-900">Consumo por Talla (Matriz Final)</h4>
-              <div className="text-sm text-green-800 mt-1 space-y-1">
+              <h4 className="font-medium text-blue-900">Consumo por Talla (Matriz Final)</h4>
+              <div className="text-sm text-blue-800 mt-1 space-y-1">
                 <p>Configure las cantidades específicas por talla para cada categoría variable.</p>
                 <p>
                   <strong>Matriz tipo hoja de cálculo:</strong> Cada fila es una categoría, cada columna una talla.
-                </p>
-                <p className="text-yellow-800">
-                  <strong>📋 Este paso NO GUARDA al backend.</strong> Las cantidades se mantienen en memoria hasta "Finalizar BOM".
-                </p>
-                <p>
-                  <strong>Resultado final:</strong> Se combinarán todos los pasos al finalizar el BOM.
                 </p>
               </div>
             </div>
@@ -418,7 +420,7 @@ export default function BOMPaso3ConsumoPorTalla() {
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
-                        <Badge variant="outline">var</Badge>
+                        <Badge variant="outline">u/m</Badge>
                       </TableCell>
                       {tallasProducto.map((talla) => (
                         <TableCell key={talla} className="text-center">

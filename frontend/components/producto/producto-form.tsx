@@ -118,13 +118,13 @@ export default function ProductoForm({ initialData, onSubmit, isNew }: ProductoF
                     <SelectValue placeholder="Seleccionar categoría" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="polos">Polos</SelectItem>
-                    <SelectItem value="joggers">Joggers</SelectItem>
-                    <SelectItem value="cafarenas">Cafarenas</SelectItem>
-                    <SelectItem value="pantalones">Pantalones</SelectItem>
-                    <SelectItem value="shorts">Shorts</SelectItem>
-                    <SelectItem value="blusas">Blusas</SelectItem>
-                    <SelectItem value="vestidos">Vestidos</SelectItem>
+                    <SelectItem value="Polos">Polos</SelectItem>
+                    <SelectItem value="Joggers">Joggers</SelectItem>
+                    <SelectItem value="Cafarenas">Cafarenas</SelectItem>
+                    <SelectItem value="Pantalones">Pantalones</SelectItem>
+                    <SelectItem value="Shorts">Shorts</SelectItem>
+                    <SelectItem value="Blusas">Blusas</SelectItem>
+                    <SelectItem value="Vestidos">Vestidos</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -140,11 +140,11 @@ export default function ProductoForm({ initialData, onSubmit, isNew }: ProductoF
                     <SelectValue placeholder="Seleccionar estación" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="verano">Verano</SelectItem>
-                    <SelectItem value="invierno">Invierno</SelectItem>
-                    <SelectItem value="otoño">Otoño</SelectItem>
-                    <SelectItem value="primavera">Primavera</SelectItem>
-                    <SelectItem value="todo-año">Todo el año</SelectItem>
+                    <SelectItem value="Verano">Verano</SelectItem>
+                    <SelectItem value="Invierno">Invierno</SelectItem>
+                    <SelectItem value="Otoño">Otoño</SelectItem>
+                    <SelectItem value="Primavera">Primavera</SelectItem>
+                    <SelectItem value="Todo el año">Todo el año</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -159,9 +159,9 @@ export default function ProductoForm({ initialData, onSubmit, isNew }: ProductoF
                     <SelectValue placeholder="Seleccionar tipo" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="superior">Prenda Superior (Polos, Blusas, Camisas)</SelectItem>
-                    <SelectItem value="inferior">Prenda Inferior (Pantalones, Shorts, Joggers)</SelectItem>
-                    <SelectItem value="completa">Prenda Completa (Vestidos, Enterizos)</SelectItem>
+                    <SelectItem value="Superior">Prenda Superior (Polos, Blusas, Camisas)</SelectItem>
+                    <SelectItem value="Inferior">Prenda Inferior (Pantalones, Shorts, Joggers)</SelectItem>
+                    <SelectItem value="Completa">Prenda Completa (Vestidos, Enterizos)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

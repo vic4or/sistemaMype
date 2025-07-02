@@ -318,50 +318,13 @@ export default function BOMPaso2InsumosVariables() {
             <Package className="h-5 w-5 text-blue-600 mt-0.5" />
             <div>
               <h4 className="font-medium text-blue-900">Insumos Variables (por Categoría)</h4>
-              <div className="text-sm text-blue-800 mt-1 space-y-1">
-                <p>Configure qué material específico usar según el color del producto final.</p>
-                <p>
-                  <strong>Ejemplo:</strong> Para un polo rojo, usar "Tela Algodón Roja" + "Hilo Rojo"
-                </p>
-                <p className="text-yellow-800">
-                  <strong>⚠️ Este paso NO solicita cantidades y NO GUARDA al backend.</strong>
-                </p>
-                <p className="text-yellow-800">
-                  <strong>📋 Solo define el mapeo material ↔ color en memoria para usarlo en el Paso 3.</strong>
-                </p>
-              </div>
+              <p className="text-sm text-blue-800 mt-1">Configure qué material específico usar según el color del producto final.</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Indicador de categorías existentes */}
-      {categoriasConfiguradas.length > 0 && (
-        <Card className="bg-green-50 border-green-200">
-          <CardContent className="p-4">
-            <div className="flex items-start gap-3">
-              <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
-              <div>
-                <h4 className="font-medium text-green-900">Categorías Cargadas desde BOM Existente</h4>
-                <div className="text-sm text-green-800 mt-1">
-                  <p>Se cargaron {categoriasConfiguradas.length} categoría{categoriasConfiguradas.length !== 1 ? 's' : ''} configurada{categoriasConfiguradas.length !== 1 ? 's' : ''} desde un BOM existente:</p>
-                  <ul className="list-disc list-inside mt-2 space-y-1">
-                    {categoriasConfiguradas.map((cat, index) => (
-                      <li key={index}>
-                        <strong>{cat.categoria.nombre_categoria}</strong> 
-                        {cat.mapeoColores && ` - ${Object.keys(cat.mapeoColores).length} color${Object.keys(cat.mapeoColores).length !== 1 ? 'es' : ''} configurado${Object.keys(cat.mapeoColores).length !== 1 ? 's' : ''}`}
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="mt-2 text-green-700">
-                    ✅ Las categorías ya están configuradas. Puede proceder al Paso 3 o añadir categorías adicionales.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+
 
       {/* Selección de categoría */}
       <Card>
@@ -554,7 +517,6 @@ export default function BOMPaso2InsumosVariables() {
                               <TableHead>Color del Producto</TableHead>
                               <TableHead>Material Específico</TableHead>
                               <TableHead>Código</TableHead>
-                              <TableHead>Unidad</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -572,7 +534,6 @@ export default function BOMPaso2InsumosVariables() {
                                 <TableCell className="font-mono text-sm">
                                   {insumo.mapeoColores?.[color.nombre]?.codigo_material || "-"}
                                 </TableCell>
-                                <TableCell>{insumo.mapeoColores?.[color.nombre]?.cfg_unidades_medida?.abreviatura || "-"}</TableCell>
                               </TableRow>
                             ))}
                           </TableBody>

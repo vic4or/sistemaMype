@@ -13,16 +13,21 @@ import { ActionButtons } from "@/components/ui/action-buttons"
 import EditarMaterialForm from "@/components/forms/editar-material-form"
 import NuevoMaterialForm from "@/components/forms/nuevo-material-form"
 import { materialesApi } from "@/services/api/materiales"
-import { categoriasMaterialApi } from "@/services/api/configuracion"
-import { Material, CategoriaMaterial } from "@/types/api"
+import { categoriasMaterialApi, unidadesMedidaApi } from "@/services/api/configuracion"
+import { Material, CategoriaMaterial, UnidadMedida, CreateMaterialDto } from "@/types/api"
 import { useToast } from "@/hooks/use-toast"
+import { useAuthContext } from "@/contexts/auth-context"
 
 export default function InventarioPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const { hasRole } = useAuthContext()
+  const isAlmacen = hasRole('almacen')
 
   const [materiales, setMateriales] = useState<Material[]>([])
   const [categorias, setCategorias] = useState<CategoriaMaterial[]>([])
+  const [unidadesMedida, setUnidadesMedida] = useState<UnidadMedida[]>([])
+  const [proveedoresPorMaterial, setProveedoresPorMaterial] = useState<Record<number, number>>({})
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("all")
@@ -41,12 +46,29 @@ export default function InventarioPage() {
   const loadData = async () => {
     try {
       setLoading(true)
-      const [materialesData, categoriasData] = await Promise.all([
+      const [materialesData, categoriasData, unidadesMedidaData] = await Promise.all([
         materialesApi.getAll(),
-        categoriasMaterialApi.getAll()
+        categoriasMaterialApi.getAll(),
+        unidadesMedidaApi.getAll()
       ])
       setMateriales(materialesData)
       setCategorias(categoriasData)
+      setUnidadesMedida(unidadesMedidaData)
+      
+      // Cargar cantidad de proveedores para cada material
+      const proveedoresCount: Record<number, number> = {}
+      for (const material of materialesData) {
+        try {
+          const materialConProveedores = await materialesApi.getProveedores(material.material_id)
+          const proveedores = (materialConProveedores as any)?.mat_materiales_prov || []
+          proveedoresCount[material.material_id] = proveedores.filter((p: any) => p.estado).length
+        } catch (error) {
+          // Si hay error al cargar proveedores de un material específico, mostrar 0
+          console.warn(`Error al cargar proveedores del material ${material.material_id}:`, error)
+          proveedoresCount[material.material_id] = 0
+        }
+      }
+      setProveedoresPorMaterial(proveedoresCount)
     } catch (error) {
       console.error("Error al cargar datos:", error)
       toast({
@@ -59,14 +81,25 @@ export default function InventarioPage() {
     }
   }
 
+  // Función para obtener la abreviatura de la unidad de medida
+  const getUnidadMedidaAbreviatura = (material: Material) => {
+    // Si es categoría 4, 5 o 6, siempre mostrar "und"
+    if ([4, 5, 6].includes(material.categoria_material_id)) {
+      return 'und'
+    }
+    
+    // Para otras categorías (como la 1), usar la unidad de medida de la API
+    const unidad = unidadesMedida.find(u => u.unidad_medida_id === material.unidad_medida_id)
+    return unidad?.abreviatura || ''
+  }
+
   // Función para obtener el estado de proveedores
   const getProveedorStatus = (material: Material) => {
-    const proveedoresActivos = material.mat_materiales_prov?.filter((p) => p.estado) || []
-    if (proveedoresActivos.length === 0) return { label: "Sin Proveedores", variant: "destructive" as const, count: 0 }
-    return {
-      label: `${proveedoresActivos.length} Proveedor${proveedoresActivos.length > 1 ? "es" : ""}`,
-      variant: "default" as const,
-      count: proveedoresActivos.length,
+    const count = proveedoresPorMaterial[material.material_id] || 0
+    return { 
+      label: count === 0 ? "Sin proveedores" : `${count} proveedor${count > 1 ? 'es' : ''}`, 
+      variant: count === 0 ? "secondary" as const : "default" as const, 
+      count 
     }
   }
 
@@ -106,7 +139,19 @@ export default function InventarioPage() {
 
   const handleUpdateMaterial = async (updatedMaterial: Material) => {
     try {
-      await materialesApi.update(updatedMaterial.material_id, updatedMaterial)
+      // Convertir Material a CreateMaterialDto para la API
+      const updateDto: Partial<CreateMaterialDto> = {
+        codigo_material: updatedMaterial.codigo_material,
+        descripcion_material: updatedMaterial.descripcion_material,
+        categoria_material_id: updatedMaterial.categoria_material_id,
+        talla_id: updatedMaterial.talla_id || undefined,
+        color_id: updatedMaterial.color_id || undefined,
+        ancho_tela_metros: updatedMaterial.ancho_tela_metros || undefined,
+        rendimiento_tela: updatedMaterial.rendimiento_tela || undefined,
+        tipo_tejido_tela: updatedMaterial.tipo_tejido_tela || undefined,
+      }
+      
+      await materialesApi.update(updatedMaterial.material_id, updateDto)
       await loadData() // Recargar datos
       setEditingMaterial(null)
       toast({
@@ -142,7 +187,7 @@ export default function InventarioPage() {
   }
 
   const onMaterialCreated = async () => {
-    await loadData() // Recargar datos cuando se crea un nuevo material
+    await loadData() // Recargar datos (incluye proveedores) cuando se crea un nuevo material
   }
 
   if (loading) {
@@ -165,11 +210,15 @@ export default function InventarioPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold tracking-tight">Inventario</h1>
         <div className="flex gap-2">
-          <Button variant="outline">
-            <FileDown className="mr-2 h-4 w-4" />
-            Exportar
-          </Button>
-          <NuevoMaterialForm onMaterialCreated={onMaterialCreated} />
+          {!isAlmacen && (
+            <>
+              <Button variant="outline">
+                <FileDown className="mr-2 h-4 w-4" />
+                Exportar
+              </Button>
+              <NuevoMaterialForm onMaterialCreated={onMaterialCreated} />
+            </>
+          )}
         </div>
       </div>
 
@@ -237,7 +286,7 @@ export default function InventarioPage() {
                       <TableCell>{item.descripcion_material}</TableCell>
                       <TableCell>{item.cfg_categorias_material?.nombre_categoria}</TableCell>
                       <TableCell className="text-right">
-                        {item.stock_actual || '-'} {item.cfg_unidades_medida?.abreviatura}
+                        {item.stock_actual || '-'} {getUnidadMedidaAbreviatura(item)}
                       </TableCell>
                       <TableCell>
                         <Badge variant={item.estado ? "default" : "secondary"} 
@@ -248,12 +297,9 @@ export default function InventarioPage() {
                       <TableCell>
                         <Badge
                           variant={proveedorStatus.variant}
-                          className={
-                            proveedorStatus.variant === "default" && proveedorStatus.count > 0
-                              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300"
-                              : proveedorStatus.variant === "destructive"
-                                ? "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-300"
-                                : ""
+                          className={proveedorStatus.count === 0 
+                            ? "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300" 
+                            : "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300"
                           }
                         >
                           {proveedorStatus.label}
@@ -261,20 +307,27 @@ export default function InventarioPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleGestionarProveedores(item)}
-                            className="flex items-center gap-1"
-                          >
-                            <Users className="h-3 w-3" />
-                            Proveedores
-                          </Button>
-                          <ActionButtons
-                            onEdit={() => handleEditMaterial(item)}
-                            onDelete={() => handleDeleteMaterial(item.material_id)}
-                            deleteLabel="Eliminar"
-                          />
+                          {!isAlmacen && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleGestionarProveedores(item)}
+                                className="flex items-center gap-1"
+                              >
+                                <Users className="h-3 w-3" />
+                                Proveedores
+                              </Button>
+                              <ActionButtons
+                                onEdit={() => handleEditMaterial(item)}
+                                onDelete={() => handleDeleteMaterial(item.material_id)}
+                                deleteLabel="Eliminar"
+                              />
+                            </>
+                          )}
+                          {isAlmacen && (
+                            <span className="text-sm text-muted-foreground">Solo consulta</span>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

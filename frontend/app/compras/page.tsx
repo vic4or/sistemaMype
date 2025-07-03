@@ -1,15 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, FileDown, Eye, Edit, Trash2, Download, Loader2, RefreshCw, Plus } from "lucide-react"
+import { Search, FileDown, Eye, Edit, Trash2, Download, Loader2, RefreshCw, Plus, ChevronLeft, ChevronRight } from "lucide-react"
 import NuevaOrdenForm from "@/components/forms/nueva-orden-form"
-import { StatusBadge } from "@/components/ui/status-badge"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +27,7 @@ import { useOrdenesCompra } from "@/hooks/use-ordenes-compra"
 import type { OrdenCompra } from "@/types/ordenes-compra"
 import { useRouter } from "next/navigation"
 import { formatDate } from "@/lib/utils"
+import { useAuthContext } from "@/contexts/auth-context"
 
 export default function ComprasPage() {
   const router = useRouter()
@@ -48,6 +48,14 @@ export default function ComprasPage() {
   const [detalleOrdenOpen, setDetalleOrdenOpen] = useState(false)
   const [ordenSeleccionada, setOrdenSeleccionada] = useState<OrdenCompra | null>(null)
   const [nuevaOrdenOpen, setNuevaOrdenOpen] = useState(false)
+  
+  // Paginación
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
+
+  // Autenticación y permisos
+  const { hasRole } = useAuthContext()
+  const isAlmacen = hasRole('almacen')
 
   // Función para formatear moneda
   const formatCurrency = (amount: number) => {
@@ -59,27 +67,33 @@ export default function ComprasPage() {
     }).format(amount)
   }
 
-  const getStatusText = (status: string) => {
-    const texts: Record<string, string> = {
-      PENDIENTE: "Pendiente",
-      APROBADA: "Aprobada",
-      ENTREGADA: "Entregada", 
-      COMPLETADA: "Completada",
-      RECHAZADA: "Rechazada"
+  const getEstadoBadge = (estado: string) => {
+    const estadoUpper = estado.toUpperCase()
+    
+    // Caso especial para COMPLETADO - usar estilos inline para forzar el color verde
+    if (estadoUpper === "COMPLETADO") {
+      return (
+        <div 
+          className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          style={{
+            backgroundColor: '#dcfce7', // bg-green-100
+            color: '#166534', // text-green-800
+            borderColor: '#bbf7d0' // border-green-200
+          }}
+        >
+          Completado
+        </div>
+      )
     }
-    return texts[status] || status
-  }
-
-  // Mapear estado COMPLETADA a completed para usar con StatusBadge
-  const mapStatusToStandard = (status: string) => {
-    const statusMap: Record<string, string> = {
-      PENDIENTE: "pending",
-      APROBADA: "approved", 
-      ENTREGADA: "delivered",
-      COMPLETADA: "completed",
-      RECHAZADA: "rejected"
+    
+    const estados: { [key: string]: { variant: "default" | "secondary" | "destructive" | "outline", label: string, className: string } } = {
+      "PENDIENTE": { variant: "secondary", label: "Pendiente", className: "bg-yellow-100 text-yellow-800 hover:bg-yellow-200" },
+      "APROBADA": { variant: "default", label: "Aprobada", className: "bg-blue-100 text-blue-800 hover:bg-blue-200" },
+      "ENTREGADA": { variant: "secondary", label: "Entregada", className: "bg-indigo-100 text-indigo-800 hover:bg-indigo-200" },
+      "RECHAZADA": { variant: "destructive", label: "Rechazada", className: "bg-red-100 text-red-800 hover:bg-red-200" }
     }
-    return statusMap[status] || status.toLowerCase()
+    const estadoInfo = estados[estadoUpper] || { variant: "secondary", label: estadoUpper, className: "" }
+    return <Badge variant={estadoInfo.variant} className={estadoInfo.className}>{estadoInfo.label}</Badge>
   }
 
   const handleView = (order: OrdenCompra) => {
@@ -133,20 +147,35 @@ export default function ComprasPage() {
     refreshOrdenes()
   }
 
+  // Paginación - usar ordenes filtradas directamente del hook
+  const totalPages = Math.ceil(ordenes.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedOrdenes = ordenes.slice(startIndex, endIndex)
+
+  // Resetear página cuando cambian los filtros
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filters.search, filters.estado, filters.proveedor_id])
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Órdenes de Compra</h1>
-        <Button onClick={() => setNuevaOrdenOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nueva Orden
-        </Button>
+        {!isAlmacen && (
+          <Button onClick={() => setNuevaOrdenOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nueva Orden
+          </Button>
+        )}
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Lista de Órdenes de Compra</CardTitle>
-          <CardDescription>Visualiza y gestiona todas las órdenes de compra</CardDescription>
+          <CardDescription>
+            Mostrando {startIndex + 1}-{Math.min(endIndex, ordenes.length)} de {ordenes.length} órdenes de compra
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
@@ -168,7 +197,7 @@ export default function ComprasPage() {
                 <SelectItem value="PENDIENTE">Pendiente</SelectItem>
                 <SelectItem value="APROBADA">Aprobada</SelectItem>
                 <SelectItem value="ENTREGADA">Entregada</SelectItem>
-                <SelectItem value="COMPLETADA">Completada</SelectItem>
+                <SelectItem value="COMPLETADO">Completado</SelectItem>
                 <SelectItem value="RECHAZADA">Rechazada</SelectItem>
               </SelectContent>
             </Select>
@@ -218,30 +247,29 @@ export default function ComprasPage() {
                   <TableCell colSpan={7} className="text-center">No hay órdenes de compra</TableCell>
                 </TableRow>
               ) : (
-                ordenes.map((orden) => (
+                paginatedOrdenes.map((orden) => (
                   <TableRow key={orden.orden_compra_id}>
                     <TableCell className="font-medium">{orden.numero_oc}</TableCell>
                     <TableCell>{orden.pro_proveedores.razon_social}</TableCell>
                     <TableCell>{formatDate(orden.fecha_emision_oc)}</TableCell>
                     <TableCell>{formatDate(orden.fecha_esperada)}</TableCell>
                     <TableCell>{formatCurrency(parseFloat(orden.monto_total_oc))}</TableCell>
-                    <TableCell>
-                      <StatusBadge 
-                        status={mapStatusToStandard(orden.estado_oc)}
-                        label={getStatusText(orden.estado_oc)}
-                      />
-                    </TableCell>
+                    <TableCell>{getEstadoBadge(orden.estado_oc)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button variant="ghost" size="icon" onClick={() => handleView(orden)}>
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleEdit(orden.orden_compra_id)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDownloadOC(orden)}>
-                          <Download className="h-4 w-4" />
-                        </Button>
+                                        {!isAlmacen && (
+                  <Button variant="ghost" size="icon" onClick={() => handleEdit(orden.orden_compra_id)}>
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                )}
+                                                  {!isAlmacen && (
+                            <Button variant="ghost" size="icon" onClick={() => handleDownloadOC(orden)}>
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          )}
                         <Button
                           variant="ghost"
                           size="icon"
@@ -262,6 +290,38 @@ export default function ComprasPage() {
               )}
             </TableBody>
           </Table>
+
+          {/* Paginación */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between pt-4">
+              <div className="text-sm text-muted-foreground">
+                Mostrando {startIndex + 1} a {Math.min(endIndex, ordenes.length)} de {ordenes.length} órdenes de compra
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Anterior
+                </Button>
+                <span className="text-sm">
+                  Página {currentPage} de {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  Siguiente
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -271,7 +331,7 @@ export default function ComprasPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <span>Detalle de Orden de Compra</span>
-              {ordenSeleccionada && (
+              {!isAlmacen && ordenSeleccionada && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -305,10 +365,7 @@ export default function ComprasPage() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Estado</p>
-                  <StatusBadge 
-                    status={mapStatusToStandard(ordenSeleccionada.estado_oc)}
-                    label={getStatusText(ordenSeleccionada.estado_oc)}
-                  />
+                  {getEstadoBadge(ordenSeleccionada.estado_oc)}
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Total</p>

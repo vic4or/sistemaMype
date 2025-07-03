@@ -22,9 +22,12 @@ import ProveedorForm from "@/components/forms/proveedor-form"
 import { useToast } from "@/components/ui/use-toast"
 import { proveedoresApi } from "@/services/api/proveedores"
 import type { Proveedor } from "@/types/material-proveedor"
+import { useAuthContext } from "@/contexts/auth-context"
 
 export default function ProveedoresPage() {
   const { toast } = useToast()
+  const { hasRole } = useAuthContext()
+  const isAlmacen = hasRole('almacen')
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<"todos" | "activos" | "inactivos">("activos")
@@ -141,12 +144,19 @@ export default function ProveedoresPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Proveedores</h1>
-          <p className="text-muted-foreground">Gestiona la información de tus proveedores de materiales</p>
+          <p className="text-muted-foreground">
+            {isAlmacen 
+              ? "Consulta la información de los proveedores de materiales"
+              : "Gestiona la información de tus proveedores de materiales"
+            }
+          </p>
         </div>
-        <Button onClick={() => setShowCreateForm(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nuevo Proveedor
-        </Button>
+        {!isAlmacen && (
+          <Button onClick={() => setShowCreateForm(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nuevo Proveedor
+          </Button>
+        )}
       </div>
 
       <Card>
@@ -224,26 +234,32 @@ export default function ProveedoresPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setProveedorToEdit(proveedor)}
-                            className="h-8 px-2"
-                          >
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setProveedorToToggle(proveedor)}
-                            className={`h-8 px-2 ${
-                              proveedor.estado
-                                ? "text-destructive hover:text-destructive"
-                                : "text-green-600 hover:text-green-600"
-                            }`}
-                          >
-                            {proveedor.estado ? <Trash2 className="h-3 w-3" /> : <UserCheck className="h-3 w-3" />}
-                          </Button>
+                          {!isAlmacen ? (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setProveedorToEdit(proveedor)}
+                                className="h-8 px-2"
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setProveedorToToggle(proveedor)}
+                                className={`h-8 px-2 ${
+                                  proveedor.estado
+                                    ? "text-destructive hover:text-destructive"
+                                    : "text-green-600 hover:text-green-600"
+                                }`}
+                              >
+                                {proveedor.estado ? <Trash2 className="h-3 w-3" /> : <UserCheck className="h-3 w-3" />}
+                              </Button>
+                            </>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">Solo consulta</span>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -281,22 +297,26 @@ export default function ProveedoresPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <ProveedorForm
-        open={showCreateForm}
-        onOpenChange={setShowCreateForm}
-        onSubmit={handleCreateProveedor}
-        title="Nuevo Proveedor"
-        description="Complete la información del proveedor"
-      />
+      {!isAlmacen && (
+        <>
+          <ProveedorForm
+            open={showCreateForm}
+            onOpenChange={setShowCreateForm}
+            onSubmit={handleCreateProveedor}
+            title="Nuevo Proveedor"
+            description="Complete la información del proveedor"
+          />
 
-      <ProveedorForm
-        open={!!proveedorToEdit}
-        onOpenChange={() => setProveedorToEdit(null)}
-        onSubmit={handleEditProveedor}
-        initialData={proveedorToEdit}
-        title="Editar Proveedor"
-        description="Modifique la información del proveedor"
-      />
+          <ProveedorForm
+            open={!!proveedorToEdit}
+            onOpenChange={() => setProveedorToEdit(null)}
+            onSubmit={handleEditProveedor}
+            initialData={proveedorToEdit}
+            title="Editar Proveedor"
+            description="Modifique la información del proveedor"
+          />
+        </>
+      )}
     </div>
   )
 }

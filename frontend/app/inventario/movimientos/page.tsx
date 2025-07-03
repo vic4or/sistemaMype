@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, FileDown, Loader2, RefreshCw } from "lucide-react"
+import { Search, FileDown, Loader2, RefreshCw, Plus, ChevronLeft, ChevronRight } from "lucide-react"
 import NuevoMovimientoForm from "@/components/forms/nuevo-movimiento-form"
 import { ActionButtons } from "@/components/ui/action-buttons"
 import { StatusBadge } from "@/components/ui/status-badge"
@@ -23,21 +23,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-
-
 export default function MovimientosInventarioPage() {
   const [movimientos, setMovimientos] = useState<Movimiento[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
-  const [tipoFilter, setTipoFilter] = useState("todos")
+  const [materialFilter, setMaterialFilter] = useState("all")
+  const [tipoFilter, setTipoFilter] = useState("all")
   const [fechaDesde, setFechaDesde] = useState("")
   const [fechaHasta, setFechaHasta] = useState("")
-  const [movimientoToDelete, setMovimientoToDelete] = useState<any>(null)
-  
-  // Estados para paginación
   const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage, setItemsPerPage] = useState(10)
+  const itemsPerPage = 10
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [movimientoToDelete, setMovimientoToDelete] = useState<number | null>(null)
 
   // Cargar movimientos al montar el componente
   useEffect(() => {
@@ -97,7 +95,7 @@ export default function MovimientosInventarioPage() {
 
       // Filtro por tipo de movimiento
       const tipoForFilter = getTipoForFilter(movimiento.tipo_movimiento)
-      const tipoMatch = tipoFilter === "todos" || tipoForFilter === tipoFilter
+      const tipoMatch = tipoFilter === "all" || tipoForFilter === tipoFilter
       
       // Filtro por fechas
       const fechaMovimiento = new Date(movimiento.fecha_movimiento)
@@ -136,7 +134,7 @@ export default function MovimientosInventarioPage() {
   }
 
   const handleDelete = () => {
-    console.log("Eliminar movimiento:", movimientoToDelete?.movimiento_id)
+    console.log("Eliminar movimiento:", movimientoToDelete)
     // TODO: Implementar eliminación lógica si es necesario
     setMovimientoToDelete(null)
   }
@@ -149,11 +147,10 @@ export default function MovimientosInventarioPage() {
   // Función para limpiar filtros
   const clearFilters = () => {
     setSearchTerm("")
-    setTipoFilter("todos")
+    setTipoFilter("all")
     setFechaDesde("")
     setFechaHasta("")
     setCurrentPage(1)
-    setItemsPerPage(10)
   }
 
   // Función para exportar datos (placeholder)
@@ -220,7 +217,7 @@ export default function MovimientosInventarioPage() {
                 <SelectValue placeholder="Tipo" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="todos">Todos los tipos</SelectItem>
+                <SelectItem value="all">Todos los tipos</SelectItem>
                 <SelectItem value="input">Entradas</SelectItem>
                 <SelectItem value="output">Salidas</SelectItem>
                 <SelectItem value="adjustment">Ajustes</SelectItem>
@@ -250,16 +247,14 @@ export default function MovimientosInventarioPage() {
               </div>
               <div className="flex items-center space-x-2">
                 <label className="text-sm font-medium">Mostrar:</label>
-                <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(Number(value))}>
-                  <SelectTrigger className="w-20">
+                <Select value={itemsPerPage.toString()} onValueChange={() => {}}>
+                  <SelectTrigger className="w-[100px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="5">5</SelectItem>
                     <SelectItem value="10">10</SelectItem>
                     <SelectItem value="25">25</SelectItem>
                     <SelectItem value="50">50</SelectItem>
-                    <SelectItem value="100">100</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -267,7 +262,7 @@ export default function MovimientosInventarioPage() {
                 <Button 
                   variant="outline" 
                   onClick={clearFilters}
-                  disabled={searchTerm === "" && tipoFilter === "todos" && fechaDesde === "" && fechaHasta === "" && itemsPerPage === 10}
+                  disabled={searchTerm === "" && tipoFilter === "all" && fechaDesde === "" && fechaHasta === ""}
                 >
                   Limpiar filtros
                 </Button>
@@ -339,7 +334,7 @@ export default function MovimientosInventarioPage() {
                       <ActionButtons
                           onView={() => handleView(movimiento.movimiento_id)}
                           onEdit={() => handleEdit(movimiento.movimiento_id)}
-                        onDelete={() => setMovimientoToDelete(movimiento)}
+                        onDelete={() => setMovimientoToDelete(movimiento.movimiento_id)}
                           useDropdown={false}
                       />
                     </TableCell>
@@ -388,7 +383,7 @@ export default function MovimientosInventarioPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Eliminar Movimiento</AlertDialogTitle>
             <AlertDialogDescription>
-              ¿Está seguro que desea eliminar el movimiento de {movimientoToDelete?.mat_materiales?.descripcion_material}?
+              ¿Está seguro que desea eliminar el movimiento?
               <span className="block mt-2 text-sm">Esta acción puede afectar el stock actual del material.</span>
             </AlertDialogDescription>
           </AlertDialogHeader>

@@ -23,15 +23,11 @@ const rolePermissions: Record<UserRole, string[]> = {
   administrador: ['*'], // Acceso total
   almacen: [
     'dashboard:view',
-    'inventario:view',
-    'inventario:create', 
-    'inventario:edit',
+    'inventario:view', // Solo consulta de materiales (sin crear, editar, gestionar proveedores)
     'movimientos:view',
-    'compras:view',
-    'proveedores:view',
-    'tizados:view',
-    'tizados:create',
-    'tizados:edit'
+    'compras:view', // Solo consulta de órdenes de compra
+    'proveedores:view', // Solo consulta de proveedores (sin crear, editar, eliminar)
+    // Nota: Sin tizados (no debe acceder a esa sección)
   ],
 }
 

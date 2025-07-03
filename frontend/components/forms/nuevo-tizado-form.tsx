@@ -116,10 +116,13 @@ export function NuevoTizadoForm({ open, onOpenChange, onSuccess }: NuevoTizadoFo
     try {
       await tizadosApi.create({
         pedido_cliente_id: selectedPedido.pedido_cliente_id,
-        ancho_tela: Number(formData.ancho_tela),
-        largo: Number(formData.largo),
-        observaciones: formData.observaciones,
-        tallas: tallasSeleccionadas
+        ancho_tela_ref_metros: formData.ancho_tela,
+        longitud_tela_metros: formData.largo,
+        descripcion_tizado: formData.observaciones,
+        tallas: tallasSeleccionadas.map(t => ({
+          talla_id: t.talla_id,
+          cant_prendas_tendida: t.cantidad
+        }))
       })
       toast({ title: "Éxito", description: "Tizado creado correctamente" })
       resetForm()

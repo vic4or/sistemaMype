@@ -472,7 +472,7 @@ export default function EditarProductoPage({ params }: { params: { id: string } 
                       <Label htmlFor={`color-${color.color_id}`} className="flex items-center gap-2">
                         <div
                           className="w-4 h-4 rounded-full border"
-                          style={{ backgroundColor: color.codigo_hex }}
+                          style={{ backgroundColor: color.codigo_color }}
                         />
                         {color.nombre_color}
                       </Label>
@@ -504,7 +504,7 @@ export default function EditarProductoPage({ params }: { params: { id: string } 
                                 className="w-4 h-4 rounded-full border"
                                 style={{
                                   backgroundColor:
-                                    colores.find((c) => c.color_id === combinacion.colorId)?.codigo_hex,
+                                    colores.find((c) => c.color_id === combinacion.colorId)?.codigo_color,
                                 }}
                               />
                               {combinacion.colorNombre}

@@ -7,11 +7,14 @@ import { Button } from "@/components/ui/button"
 import { Clock, RefreshCw, Eye } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { pedidosApi } from "@/services/api/pedidos"
+import { clientesApi } from "@/services/api/clientes"
 import type { Pedido } from "@/types/order"
+import type { Cliente } from "@/types/api"
 
 export default function PedidosPendientes() {
   const router = useRouter()
   const [pedidos, setPedidos] = useState<Pedido[]>([])
+  const [clientes, setClientes] = useState<Cliente[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -19,11 +22,16 @@ export default function PedidosPendientes() {
     const cargarPedidosPendientes = async () => {
       try {
         setLoading(true)
-        const data = await pedidosApi.getAll()
+        // Cargar pedidos y clientes en paralelo (como en la página principal)
+        const [pedidosData, clientesData] = await Promise.all([
+          pedidosApi.getAll(),
+          clientesApi.getAll()
+        ])
         
         // Filtrar solo pedidos pendientes
-        const pendientes = data.filter((p: Pedido) => p.estado_pedido === 'PENDIENTE')
+        const pendientes = pedidosData.filter((p: Pedido) => p.estado_pedido === 'PENDIENTE')
         setPedidos(pendientes.slice(0, 5)) // Limitar a 5 para el dashboard
+        setClientes(clientesData)
         
       } catch (error) {
         console.error('Error al cargar pedidos pendientes:', error)
@@ -44,8 +52,10 @@ export default function PedidosPendientes() {
     return fecha.split('T')[0]
   }
 
-  const getNombreCliente = (pedido: Pedido) => {
-    return pedido.cli_clientes?.nombre || 'Cliente sin nombre'
+  // Usar el mismo patrón que la página principal
+  const getNombreCliente = (clienteId: number) => {
+    const cliente = clientes.find(c => c.cliente_id === clienteId)
+    return cliente?.nombre || 'Cliente no encontrado'
   }
 
   const formatearMoneda = (valor?: number) => {
@@ -118,7 +128,7 @@ export default function PedidosPendientes() {
               {pedidos.map((pedido) => (
                 <div key={pedido.pedido_cliente_id} className="flex items-center justify-between p-2 border rounded hover:bg-muted/30 transition-colors">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{getNombreCliente(pedido)}</p>
+                    <p className="text-sm font-medium truncate">{getNombreCliente(pedido.cliente_id)}</p>
                     <p className="text-xs text-muted-foreground">
                       {getCodigoPedido(pedido)} • {formatearFecha(pedido.fecha_entrega)}
                     </p>

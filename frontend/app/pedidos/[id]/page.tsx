@@ -88,6 +88,13 @@ export default function PedidoPage({ params }: Props) {
     return precioNum.toFixed(2)
   }
 
+  const calcularTotalCantidades = (): number => {
+    if (!pedido?.ped_pedidos_cliente_det) return 0
+    return pedido.ped_pedidos_cliente_det.reduce((total, detalle) => {
+      return total + (detalle.cantidad_solicitada || 0)
+    }, 0)
+  }
+
   if (loading) {
     return <div>Cargando...</div>
   }
@@ -220,9 +227,13 @@ export default function PedidoPage({ params }: Props) {
                 </TableRow>
               ))}
               <TableRow>
-                <TableCell colSpan={5} className="text-right font-bold">
+                <TableCell colSpan={3} className="text-right font-bold">
                   Total
                 </TableCell>
+                <TableCell className="text-right font-bold">
+                  {calcularTotalCantidades()}
+                </TableCell>
+                <TableCell></TableCell>
                 <TableCell className="text-right font-bold">
                   S/ {formatPrecio(pedido.total)}
                 </TableCell>

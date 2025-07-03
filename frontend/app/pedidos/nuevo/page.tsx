@@ -95,6 +95,14 @@ export default function NuevoPedidoPage() {
           coloresApi.getAll(),
           tallasApi.getAll()
         ])
+        
+        console.log('🎨 Colores cargados:', coloresData.map(c => ({
+          id: c.color_id,
+          nombre: c.nombre_color,
+          hex: c.codigo_color,
+          estructura_completa: c
+        })))
+        
         setClientes(clientesData)
         setProductos(productosData)
         setColores(coloresData)
@@ -142,10 +150,16 @@ export default function NuevoPedidoPage() {
       .filter((id): id is number => id !== undefined)))
       .map(colorId => {
         const color = colores.find(c => c.color_id === colorId)
+        console.log('🎨 Debug color mapping:', {
+          colorId,
+          colorFound: color,
+          hex: color?.codigo_color,
+          name: color?.nombre_color
+        })
         return {
           id: colorId,
           name: color?.nombre_color || `Color ${colorId}`,
-          hex: color?.codigo_hex || "#000000"
+          hex: color?.codigo_color || "#cccccc"
         }
       }),
     tallas: Array.from(new Set(combinacionesProducto
@@ -478,8 +492,9 @@ export default function NuevoPedidoPage() {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <div
-                        className="w-4 h-4 rounded-full border"
+                        className="w-4 h-4 rounded-full border border-gray-300"
                         style={{ backgroundColor: color.hex }}
+                        title={`Color: ${color.name} (${color.hex})`}
                       />
                       <span>{color.name}</span>
                     </div>
@@ -775,8 +790,9 @@ export default function NuevoPedidoPage() {
                             <div className="flex items-center justify-between min-w-[120px]">
                               <div className="flex items-center gap-2">
                                 <div
-                                  className="w-4 h-4 rounded border flex-shrink-0"
+                                  className="w-4 h-4 rounded-full border border-gray-300"
                                   style={{ backgroundColor: color.hex }}
+                                  title={`Color: ${color.name} (${color.hex})`}
                                 />
                                 <span className="font-medium">{color.name}</span>
                               </div>

@@ -22,9 +22,9 @@ export interface UnidadMedida {
 }
 
 export interface Color {
-  id: string
-  nombre: string
-  codigo_hex: string
+  color_id: number
+  nombre_color: string
+  codigo_color: string
   estado: boolean
   fecha_creacion: string
   fecha_modificacion: string | null

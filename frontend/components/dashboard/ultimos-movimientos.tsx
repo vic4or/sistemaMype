@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation"
 
 interface MovimientoInventario {
   movimiento_id: number
-  tipo_movimiento: 'entrada' | 'salida'
+  tipo_movimiento: 'entrada' | 'salida' | 'Entrada' | 'Salida' | 'Ajuste' | 'ajuste'
   material_id?: number
   descripcion_material?: string
   codigo_material?: string
@@ -79,16 +79,23 @@ export default function UltimosMovimientos() {
     }
   }
 
-  const getTipoIcon = (tipo: 'entrada' | 'salida') => {
-    return tipo === 'entrada' ? (
+  // Función para normalizar el tipo de movimiento
+  const normalizarTipoMovimiento = (tipo: string): 'entrada' | 'salida' => {
+    return tipo.toLowerCase() as 'entrada' | 'salida'
+  }
+
+  const getTipoIcon = (tipo: string) => {
+    const tipoNormalizado = normalizarTipoMovimiento(tipo)
+    return tipoNormalizado === 'entrada' ? (
       <ArrowUp className="h-3 w-3 text-green-600" />
     ) : (
       <ArrowDown className="h-3 w-3 text-red-600" />
     )
   }
 
-  const getTipoBadge = (tipo: 'entrada' | 'salida') => {
-    return tipo === 'entrada' ? (
+  const getTipoBadge = (tipo: string) => {
+    const tipoNormalizado = normalizarTipoMovimiento(tipo)
+    return tipoNormalizado === 'entrada' ? (
       <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
         Entrada
       </Badge>

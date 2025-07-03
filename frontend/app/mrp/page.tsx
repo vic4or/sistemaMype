@@ -5,13 +5,16 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Play, FileDown, Check, History, Eye, ChevronDown, ChevronRight, AlertCircle } from "lucide-react"
+import { Play, Check, History, Eye, ChevronDown, ChevronRight, AlertCircle } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { planificadorApi, type EjecutarPlanDto, type SugerenciaCompra, type MaterialSugerencia, type PlanificacionHistorial } from "@/services/api/planificador"
 import { pedidosApi } from "@/services/api/pedidos"
+import { clientesApi } from "@/services/api/clientes"
 import type { Pedido } from "@/types/order"
+import type { Cliente } from "@/types/api"
 import { formatDate } from "@/lib/utils"
+import { useToast } from "@/hooks/use-toast"
 
 // Tipo extendido para la interfaz con propiedades de UI
 interface SugerenciaCompraUI extends SugerenciaCompra {
@@ -25,6 +28,8 @@ interface MaterialSugerenciaUI extends MaterialSugerencia {
 }
 
 export default function MRPPage() {
+  const { toast } = useToast()
+  
   // Estados principales
   const [vistaActual, setVistaActual] = useState<"configuracion" | "sugerencias" | "historial">("configuracion")
   const [fechaInicio, setFechaInicio] = useState(() => {
@@ -39,7 +44,7 @@ export default function MRPPage() {
   
   // Estados de datos
   const [pedidos, setPedidos] = useState<Pedido[]>([])
-  const [pedidosSeleccionados, setPedidosSeleccionados] = useState<number[]>([])
+  const [clientes, setClientes] = useState<Cliente[]>([])
   const [sugerenciasCompra, setSugerenciasCompra] = useState<SugerenciaCompraUI[]>([])
   const [historialPlanificaciones, setHistorialPlanificaciones] = useState<PlanificacionHistorial[]>([])
   
@@ -50,9 +55,9 @@ export default function MRPPage() {
   const [error, setError] = useState<string | null>(null)
   const [corridaActual, setCorridaActual] = useState<number | null>(null)
 
-  // Cargar pedidos al montar el componente
+  // Cargar pedidos y clientes al montar el componente
   useEffect(() => {
-    cargarPedidos()
+    cargarDatos()
   }, [])
 
   // Cargar historial cuando se cambia a esa vista
@@ -62,15 +67,19 @@ export default function MRPPage() {
     }
   }, [vistaActual])
 
-  const cargarPedidos = async () => {
+  const cargarDatos = async () => {
     try {
       setCargandoPedidos(true)
       setError(null)
-      const pedidosData = await pedidosApi.getAll()
+      const [pedidosData, clientesData] = await Promise.all([
+        pedidosApi.getAll(),
+        clientesApi.getAll()
+      ])
       setPedidos(pedidosData)
+      setClientes(clientesData)
     } catch (error) {
-      console.error('Error al cargar pedidos:', error)
-      setError('Error al cargar los pedidos')
+      console.error('Error al cargar datos:', error)
+      setError('Error al cargar los datos')
     } finally {
       setCargandoPedidos(false)
     }
@@ -99,20 +108,9 @@ export default function MRPPage() {
     })
   }, [pedidos, fechaInicio, fechaFin])
 
-  // Inicializar pedidos seleccionados cuando cambie el filtro
-  useEffect(() => {
-    setPedidosSeleccionados(pedidosEnPeriodo.map((p) => p.pedido_cliente_id))
-  }, [pedidosEnPeriodo])
-
-  const handlePedidoSeleccionado = (pedidoId: number) => {
-    setPedidosSeleccionados((prev) =>
-      prev.includes(pedidoId) ? prev.filter((id) => id !== pedidoId) : [...prev, pedidoId],
-    )
-  }
-
   const ejecutarMRP = async () => {
-    if (pedidosSeleccionados.length === 0) {
-      setError("Debe seleccionar al menos un pedido para ejecutar el MRP")
+    if (pedidosEnPeriodo.length === 0) {
+      setError("No hay pedidos en el rango de fechas seleccionado para ejecutar el MRP")
       return
     }
 
@@ -126,11 +124,28 @@ export default function MRPPage() {
         fecha_fin: fechaFin
       }
       
+      console.log(`Ejecutando MRP para ${pedidosEnPeriodo.length} pedidos...`)
       const result = await planificadorApi.ejecutarPlanificacion(dto)
+      console.log(`MRP ejecutado exitosamente. Corrida ID: ${result.corrida_id}`)
       setCorridaActual(result.corrida_id)
       
       // Obtener sugerencias de la corrida
+      console.log('Obteniendo sugerencias de compra...')
       const sugerencias = await planificadorApi.obtenerSugerencias(result.corrida_id)
+      console.log(`Se obtuvieron ${sugerencias.length} sugerencias agrupadas por proveedor`)
+      
+      console.log('=== DEBUG: Datos recibidos del backend ===')
+      sugerencias.forEach((sugerencia, index) => {
+        console.log(`Proveedor ${index}: ${sugerencia.proveedor_nombre}`)
+        sugerencia.materiales.forEach((material, matIndex) => {
+          console.log(`  Material ${matIndex}:`, {
+            id: material.id,
+            nombre: material.material_nombre,
+            estado: material.estado,
+            seleccionado_inicial: material.seleccionado
+          })
+        })
+      })
       
       // Convertir las sugerencias de la API al formato de la UI
       const sugerenciasUI: SugerenciaCompraUI[] = sugerencias.map(sugerencia => ({
@@ -168,6 +183,59 @@ export default function MRPPage() {
     )
   }
 
+  const toggleMaterialSeleccionado = (proveedorIndex: number, materialId: number) => {
+    console.log('=== DEBUG: Toggle material ===')
+    console.log('Proveedor index:', proveedorIndex)
+    console.log('Material ID:', materialId)
+    
+    setSugerenciasCompra((prev) =>
+      prev.map((sugerencia, i) => {
+        if (i === proveedorIndex) {
+          const materialesActualizados = sugerencia.materiales.map((material) => {
+            if (material.id === materialId && material.estado === 'PENDIENTE') {
+              console.log(`Cambiando selección de material ${material.material_nombre}:`, {
+                estado_actual: material.seleccionado,
+                nuevo_estado: !material.seleccionado,
+                estado_material: material.estado
+              })
+              return { ...material, seleccionado: !material.seleccionado } as MaterialSugerenciaUI
+            }
+            return material
+          }) as MaterialSugerenciaUI[]
+
+          return {
+            ...sugerencia,
+            materiales: materialesActualizados,
+          }
+        }
+        return sugerencia
+      }),
+    )
+  }
+
+  const cargarSugerenciasDeHistorial = async (corridaId: number) => {
+    try {
+      setCorridaActual(corridaId)
+      const sugerencias = await planificadorApi.obtenerSugerencias(corridaId)
+      
+      const sugerenciasUI: SugerenciaCompraUI[] = sugerencias.map(sugerencia => ({
+        ...sugerencia,
+        materiales: sugerencia.materiales.map(material => ({
+          ...material,
+          modificado: false
+        })) as MaterialSugerenciaUI[],
+        seleccionado: true,
+        expandido: true // Expandir por defecto al venir del historial
+      }))
+      
+      setSugerenciasCompra(sugerenciasUI)
+      setVistaActual("sugerencias")
+    } catch (error) {
+      console.error('Error al cargar sugerencias del historial:', error)
+      setError('Error al cargar las sugerencias de la corrida seleccionada')
+    }
+  }
+
   const modificarMaterial = (proveedorIndex: number, materialId: number, campo: string, valor: any) => {
     setSugerenciasCompra((prev) =>
       prev.map((sugerencia, i) => {
@@ -197,9 +265,33 @@ export default function MRPPage() {
   }
 
   const generarOrdenesCompra = async () => {
-    const proveedoresSeleccionados = sugerenciasCompra.filter((s) => s.seleccionado)
-    if (proveedoresSeleccionados.length === 0) {
-      setError("Debe seleccionar al menos un proveedor para generar órdenes de compra")
+    // Obtener todas las sugerencias individuales seleccionadas
+    const sugerenciasSeleccionadas: number[] = []
+    
+    console.log('=== DEBUG: Análisis de sugerencias ===')
+    sugerenciasCompra.forEach((proveedor, proveedorIndex) => {
+      console.log(`Proveedor ${proveedorIndex}: ${proveedor.proveedor_nombre}`)
+      proveedor.materiales.forEach((material, materialIndex) => {
+        console.log(`  Material ${materialIndex}:`, {
+          id: material.id,
+          nombre: material.material_nombre,
+          estado: material.estado,
+          seleccionado: material.seleccionado,
+          seIncluira: material.seleccionado && material.estado === 'PENDIENTE'
+        })
+        
+        if (material.seleccionado && material.estado === 'PENDIENTE') {
+          sugerenciasSeleccionadas.push(material.id)
+        }
+      })
+    })
+
+    console.log('=== IDs que se enviarán al backend ===')
+    console.log('Total de IDs seleccionados:', sugerenciasSeleccionadas.length)
+    console.log('IDs:', sugerenciasSeleccionadas)
+
+    if (sugerenciasSeleccionadas.length === 0) {
+      setError("Debe seleccionar al menos una sugerencia pendiente para generar órdenes de compra")
       return
     }
 
@@ -210,16 +302,27 @@ export default function MRPPage() {
 
     try {
       const dto = {
-        sugerencias_aprobadas: proveedoresSeleccionados.map(s => s.id)
+        sugerencia_ids: sugerenciasSeleccionadas
       }
+      
+      console.log('=== DTO que se envía al backend ===')
+      console.log('Corrida ID:', corridaActual)
+      console.log('DTO completo:', dto)
       
       const result = await planificadorApi.aprobarSugerencias(corridaActual, dto)
       
-      alert(`Se generaron ${result.ordenes_generadas} órdenes de compra exitosamente`)
+      console.log('=== Respuesta del backend ===')
+      console.log('Resultado completo:', result)
+      
+      // Mostrar toast de éxito
+      toast({
+        title: "¡Éxito!",
+        description: result?.message || 'Sugerencias procesadas exitosamente'
+      })
       
       // Recargar historial y volver a configuración
       await cargarHistorial()
-      setVistaActual("historial")
+      setVistaActual("configuracion")
       
     } catch (error) {
       console.error('Error al generar órdenes:', error)
@@ -227,12 +330,36 @@ export default function MRPPage() {
     }
   }
 
-  const getNombreCliente = (pedido: Pedido) => {
-    return pedido.cli_clientes?.nombre || 'Cliente sin nombre'
+  const getNombreCliente = (clienteId: number) => {
+    const cliente = clientes.find(c => c.cliente_id === clienteId)
+    return cliente?.nombre || "Cliente no encontrado"
   }
 
   const getCodigoPedido = (pedido: Pedido) => {
     return `PED-${pedido.pedido_cliente_id.toString().padStart(4, '0')}`
+  }
+
+  const getEstadoBadge = (estado: string) => {
+    const estadoUpper = estado.toUpperCase()
+    const estados: { [key: string]: { variant: "default" | "secondary" | "destructive" | "outline", label: string, className: string } } = {
+      "PENDIENTE": { variant: "secondary", label: "Pendiente", className: "bg-yellow-100 text-yellow-800 hover:bg-yellow-200" },
+      "EN_PROCESO": { variant: "default", label: "En Proceso", className: "bg-blue-100 text-blue-800 hover:bg-blue-200" },
+      "COMPLETADO": { variant: "outline", label: "Completado", className: "bg-green-100 text-green-800 hover:bg-green-200" },
+      "ANULADO": { variant: "destructive", label: "Anulado", className: "bg-red-100 text-red-800 hover:bg-red-200" }
+    }
+    const estadoInfo = estados[estadoUpper] || { variant: "secondary", label: estadoUpper, className: "" }
+    return <Badge variant={estadoInfo.variant} className={estadoInfo.className}>{estadoInfo.label}</Badge>
+  }
+
+  const getEstadoSugerenciaBadge = (estado: string) => {
+    const estadoUpper = estado.toUpperCase()
+    const estados: { [key: string]: { variant: "default" | "secondary" | "destructive" | "outline", label: string, className: string } } = {
+      "PENDIENTE": { variant: "secondary", label: "Pendiente", className: "bg-yellow-100 text-yellow-800 hover:bg-yellow-200" },
+      "OC_GENERADA": { variant: "outline", label: "OC Generada", className: "bg-green-100 text-green-800 hover:bg-green-200" },
+      "CANCELADA": { variant: "destructive", label: "Cancelada", className: "bg-red-100 text-red-800 hover:bg-red-200" }
+    }
+    const estadoInfo = estados[estadoUpper] || { variant: "secondary", label: estadoUpper, className: "" }
+    return <Badge variant={estadoInfo.variant} className={estadoInfo.className}>{estadoInfo.label}</Badge>
   }
 
   // Nota: formatDate ya viene de lib/utils, no necesitamos función local
@@ -247,16 +374,20 @@ export default function MRPPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold tracking-tight">Planificador MRP</h1>
         <div className="flex gap-2">
+          {vistaActual !== "configuracion" && (
+            <Button
+              variant="outline"
+              onClick={() => setVistaActual("configuracion")}
+            >
+              Volver a Configuración
+            </Button>
+          )}
           <Button
             variant={vistaActual === "historial" ? "default" : "outline"}
             onClick={() => setVistaActual("historial")}
           >
             <History className="mr-2 h-4 w-4" />
             Historial
-          </Button>
-          <Button variant="outline" disabled>
-            <FileDown className="mr-2 h-4 w-4" />
-            Exportar
           </Button>
         </div>
       </div>
@@ -277,7 +408,7 @@ export default function MRPPage() {
           <CardHeader>
             <CardTitle>Configuración de Planificación MRP</CardTitle>
             <CardDescription>
-              Seleccione el periodo y los pedidos para generar el plan de requerimientos de materiales
+              Seleccione el periodo de fechas para generar el plan de requerimientos de materiales. Todos los pedidos en el rango serán procesados.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -300,7 +431,9 @@ export default function MRPPage() {
                   Pedidos en el Periodo 
                   {cargandoPedidos ? " (Cargando...)" : ` (${pedidosEnPeriodo.length} encontrados)`}
                 </h3>
-                <Badge variant="secondary">{pedidosSeleccionados.length} seleccionados</Badge>
+                {pedidosEnPeriodo.length > 0 && (
+                  <Badge variant="secondary">Todos serán procesados</Badge>
+                )}
               </div>
 
               {cargandoPedidos ? (
@@ -320,7 +453,6 @@ export default function MRPPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-12"></TableHead>
                         <TableHead>Pedido</TableHead>
                         <TableHead>Cliente</TableHead>
                         <TableHead>Fecha Entrega</TableHead>
@@ -331,19 +463,11 @@ export default function MRPPage() {
                     <TableBody>
                       {pedidosEnPeriodo.map((pedido) => (
                         <TableRow key={pedido.pedido_cliente_id}>
-                          <TableCell>
-                            <Checkbox
-                              checked={pedidosSeleccionados.includes(pedido.pedido_cliente_id)}
-                              onCheckedChange={() => handlePedidoSeleccionado(pedido.pedido_cliente_id)}
-                            />
-                          </TableCell>
                           <TableCell className="font-medium">{getCodigoPedido(pedido)}</TableCell>
-                          <TableCell>{getNombreCliente(pedido)}</TableCell>
+                          <TableCell>{getNombreCliente(pedido.cliente_id)}</TableCell>
                           <TableCell>{formatDate(pedido.fecha_entrega)}</TableCell>
                           <TableCell>
-                            <Badge variant="outline" className="text-xs">
-                              {pedido.estado_pedido}
-                            </Badge>
+                            {getEstadoBadge(pedido.estado_pedido)}
                           </TableCell>
                           <TableCell className="text-right">{formatCurrency(pedido.total)}</TableCell>
                         </TableRow>
@@ -358,7 +482,7 @@ export default function MRPPage() {
             <div className="flex justify-end">
               <Button 
                 onClick={ejecutarMRP} 
-                disabled={ejecutandoMRP || pedidosSeleccionados.length === 0 || cargandoPedidos} 
+                disabled={ejecutandoMRP || pedidosEnPeriodo.length === 0 || cargandoPedidos} 
                 size="lg"
               >
                 <Play className="mr-2 h-4 w-4" />
@@ -370,19 +494,20 @@ export default function MRPPage() {
       )}
 
       {vistaActual === "sugerencias" && (
-        <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-2xl font-bold">Sugerencias de Compra</h2>
-              <p className="text-muted-foreground">
-                Revise y modifique las sugerencias antes de generar las órdenes de compra
-              </p>
-            </div>
+                  <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-bold">Sugerencias de Compra</h2>
+                <p className="text-muted-foreground">
+                  {corridaActual ? `Corrida MRP-${corridaActual}: ` : ''}
+                  Seleccione las sugerencias pendientes para generar órdenes de compra
+                </p>
+              </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setVistaActual("configuracion")}>
-                Volver a Configuración
-              </Button>
-              <Button onClick={generarOrdenesCompra} disabled={sugerenciasCompra.length === 0}>
+              <Button 
+                onClick={generarOrdenesCompra} 
+                disabled={sugerenciasCompra.reduce((sum, s) => sum + s.materiales.filter(m => m.seleccionado && m.estado === 'PENDIENTE').length, 0) === 0}
+              >
                 <Check className="mr-2 h-4 w-4" />
                 Generar Órdenes de Compra
               </Button>
@@ -413,17 +538,18 @@ export default function MRPPage() {
                     </div>
                     <div>
                       <div className="text-2xl font-bold text-orange-600">
-                        {sugerenciasCompra.filter((s) => s.seleccionado).length}
+                        {sugerenciasCompra.reduce((sum, s) => sum + s.materiales.filter(m => m.seleccionado).length, 0)}
                       </div>
                       <div className="text-sm text-muted-foreground">Seleccionados</div>
                     </div>
                     <div>
                       <div className="text-2xl font-bold text-purple-600">
                         {formatCurrency(
-                          sugerenciasCompra.filter((s) => s.seleccionado).reduce((sum, s) => sum + s.total, 0),
+                          sugerenciasCompra.reduce((sum, s) => 
+                            sum + s.materiales.filter(m => m.seleccionado).reduce((matSum, m) => matSum + m.subtotal, 0), 0)
                         )}
                       </div>
-                      <div className="text-sm text-muted-foreground">Total</div>
+                      <div className="text-sm text-muted-foreground">Total Seleccionado</div>
                     </div>
                   </div>
                 </CardContent>
@@ -466,61 +592,83 @@ export default function MRPPage() {
                         <Table>
                           <TableHeader>
                             <TableRow>
+                              <TableHead className="w-12"></TableHead>
                               <TableHead>Material</TableHead>
                               <TableHead className="text-center">Cantidad</TableHead>
                               <TableHead className="text-center">Precio Unit.</TableHead>
                               <TableHead className="text-right">Subtotal</TableHead>
-                              <TableHead className="text-center">Fecha Necesaria</TableHead>
+                              <TableHead className="text-center">Fecha Sugerida Ordenar</TableHead>
                               <TableHead className="text-center">Estado</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
                             {sugerencia.materiales.map((material) => (
-                              <TableRow key={material.id}>
-                                <TableCell className="font-medium">{material.material_nombre}</TableCell>
-                                <TableCell className="text-center">
-                                  <Input
-                                    type="number"
-                                    value={material.cantidad}
-                                    onChange={(e) =>
-                                      modificarMaterial(
-                                        index,
-                                        material.id,
-                                        "cantidad",
-                                        Number.parseFloat(e.target.value) || 0,
-                                      )
-                                    }
-                                    className="w-20 text-center"
-                                    step="0.01"
-                                  />
-                                  <span className="text-xs text-muted-foreground ml-1">{material.unidad}</span>
-                                </TableCell>
-                                <TableCell className="text-center">
-                                  <Input
-                                    type="number"
-                                    value={material.precio_unitario}
-                                    onChange={(e) =>
-                                      modificarMaterial(
-                                        index,
-                                        material.id,
-                                        "precio_unitario",
-                                        Number.parseFloat(e.target.value) || 0,
-                                      )
-                                    }
-                                    className="w-20 text-center"
-                                    step="0.01"
+                              <TableRow key={material.id} className="h-14">
+                                <TableCell className="align-middle">
+                                  <Checkbox
+                                    checked={material.seleccionado}
+                                    disabled={material.estado !== 'PENDIENTE'}
+                                    onCheckedChange={() => toggleMaterialSeleccionado(index, material.id)}
                                   />
                                 </TableCell>
-                                <TableCell className="text-right font-medium">
+                                <TableCell className="font-medium align-middle">{material.material_nombre}</TableCell>
+                                <TableCell className="text-center align-middle">
+                                  <div className="flex items-center justify-center">
+                                    <div className="flex items-center bg-gray-50 rounded-md border px-3 py-2 min-w-[100px]">
+                                      <Input
+                                        type="number"
+                                        value={material.cantidad}
+                                        onChange={(e) =>
+                                          modificarMaterial(
+                                            index,
+                                            material.id,
+                                            "cantidad",
+                                            Number.parseFloat(e.target.value) || 0,
+                                          )
+                                        }
+                                        className="w-14 text-center border-0 bg-transparent focus:ring-0 focus:border-0 p-0 text-sm"
+                                        step="0.01"
+                                      />
+                                      <div className="w-10 text-center ml-1">
+                                        <span className="text-xs text-muted-foreground font-medium">{material.unidad}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-center align-middle">
+                                  <div className="flex items-center justify-center">
+                                    <div className="flex items-center bg-gray-50 rounded-md border px-3 py-2 min-w-[90px]">
+                                      <span className="text-xs text-muted-foreground mr-1">S/.</span>
+                                      <Input
+                                        type="number"
+                                        value={material.precio_unitario}
+                                        onChange={(e) =>
+                                          modificarMaterial(
+                                            index,
+                                            material.id,
+                                            "precio_unitario",
+                                            Number.parseFloat(e.target.value) || 0,
+                                          )
+                                        }
+                                        className="w-16 text-center border-0 bg-transparent focus:ring-0 focus:border-0 p-0 text-sm"
+                                        step="0.01"
+                                      />
+                                    </div>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-right font-medium align-middle">
                                   {formatCurrency(material.subtotal)}
                                 </TableCell>
-                                <TableCell className="text-center text-sm">{formatDate(material.fecha_necesaria)}</TableCell>
-                                <TableCell className="text-center">
-                                  {(material as MaterialSugerenciaUI).modificado && (
-                                    <Badge variant="outline" className="text-orange-600">
-                                      Modificado
-                                    </Badge>
-                                  )}
+                                <TableCell className="text-center text-sm align-middle">{formatDate(material.fecha_necesaria)}</TableCell>
+                                <TableCell className="text-center align-middle">
+                                  <div className="flex flex-col items-center space-y-1">
+                                    {getEstadoSugerenciaBadge(material.estado)}
+                                    {(material as MaterialSugerenciaUI).modificado && (
+                                      <Badge variant="outline" className="text-orange-600 text-xs">
+                                        Modificado
+                                      </Badge>
+                                    )}
+                                  </div>
                                 </TableCell>
                               </TableRow>
                             ))}
@@ -557,7 +705,6 @@ export default function MRPPage() {
                   <TableRow>
                     <TableHead>ID Corrida</TableHead>
                     <TableHead>Fecha Ejecución</TableHead>
-                    <TableHead>Usuario</TableHead>
                     <TableHead className="text-center">Pedidos</TableHead>
                     <TableHead className="text-center">Sugerencias</TableHead>
                     <TableHead className="text-center">Estado</TableHead>
@@ -569,18 +716,32 @@ export default function MRPPage() {
                     <TableRow key={planificacion.corrida_id}>
                       <TableCell className="font-medium">MRP-{planificacion.corrida_id}</TableCell>
                       <TableCell>{formatDate(planificacion.fecha_ejecucion)}</TableCell>
-                      <TableCell>{planificacion.usuario}</TableCell>
                       <TableCell className="text-center">{planificacion.pedidos_incluidos}</TableCell>
                       <TableCell className="text-center">{planificacion.sugerencias_generadas}</TableCell>
                       <TableCell className="text-center">
-                        <Badge variant="outline" className="text-green-600">
+                        <Badge 
+                          variant={planificacion.estado === 'Completado' ? "outline" : "secondary"} 
+                          className={planificacion.estado === 'Completado' ? "text-green-600" : "text-yellow-600"}
+                        >
                           {planificacion.estado}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-center">
-                        <Button variant="ghost" size="sm" disabled>
-                          <Eye className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center justify-center space-x-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => cargarSugerenciasDeHistorial(planificacion.corrida_id)}
+                            title="Ver sugerencias"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          {planificacion.sugerencias_pendientes > 0 && (
+                            <Badge variant="secondary" className="text-xs">
+                              {planificacion.sugerencias_pendientes} pendientes
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

@@ -31,14 +31,9 @@ export default function AccesoMRP() {
         <div className="space-y-3">
           {/* Descripción del módulo */}
           <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">
-              Ejecute el cálculo de requerimientos de materiales para la planificación de producción.
+            <p className="text-sm text-muted-foreground">
+              Calcula los insumos necesarios en base a los pedidos y las listas de materiales asociadas a productos, generando sugerencias de compra.
             </p>
-            <div className="text-xs text-muted-foreground space-y-0.5">
-              <p>• Análisis de demanda de materiales</p>
-              <p>• Cálculo de necesidades de compra</p>
-              <p>• Optimización de inventarios</p>
-            </div>
           </div>
 
           {/* Acciones rápidas */}

@@ -21,9 +21,9 @@ import { Plus, Trash2, PlusCircle, Loader2, DollarSign, Package } from "lucide-r
 import { toast } from "@/hooks/use-toast"
 import { proveedoresApi } from "@/services/api/proveedores"
 import { materialesApi } from "@/services/api/materiales"
-import { categoriasMaterialApi } from "@/services/api/configuracion"
+import { categoriasMaterialApi, unidadesMedidaApi } from "@/services/api/configuracion"
 import { createOrdenCompra } from "@/services/api/ordenes-compra"
-import type { Material, MaterialProveedor, AsociarProveedorDto } from "@/types/api"
+import type { Material, MaterialProveedor, AsociarProveedorDto, UnidadMedida } from "@/types/api"
 import type { Proveedor } from "@/types/material-proveedor"
 
 interface OrderItem {
@@ -57,6 +57,7 @@ export default function NuevaOrdenForm({ onSuccess, standalone }: NuevaOrdenForm
   const [categoriasMaterial, setCategoriasMaterial] = useState<any[]>([])
   const [materialesPorCategoria, setMaterialesPorCategoria] = useState<Material[]>([])
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string>("")
+  const [unidadesMedida, setUnidadesMedida] = useState<UnidadMedida[]>([])
   
   // Estados del formulario
   const [formData, setFormData] = useState({
@@ -97,13 +98,15 @@ export default function NuevaOrdenForm({ onSuccess, standalone }: NuevaOrdenForm
     const loadData = async () => {
       try {
         setLoading(true)
-        const [proveedoresData, categoriasData] = await Promise.all([
+        const [proveedoresData, categoriasData, unidadesData] = await Promise.all([
           proveedoresApi.getAll(),
-          categoriasMaterialApi.getAll()
+          categoriasMaterialApi.getAll(),
+          unidadesMedidaApi.getAll()
         ])
         
         setProveedores(proveedoresData.filter(p => p.estado)) // Solo proveedores activos
         setCategoriasMaterial(categoriasData.filter((c: any) => c.estado))
+        setUnidadesMedida(unidadesData.filter(u => u.estado)) // Solo unidades activas
       } catch (err: any) {
         console.error("Error al cargar datos:", err)
         toast({
@@ -122,11 +125,43 @@ export default function NuevaOrdenForm({ onSuccess, standalone }: NuevaOrdenForm
     }
   }, [open, standalone])
 
+  // Helper para obtener la unidad de medida de un material
+  const getUnidadMedidaMaterial = (material: Material) => {
+    console.log("🔍 Debug getUnidadMedidaMaterial:")
+    console.log("Material:", material)
+    console.log("material.unidad_medida_id:", material.unidad_medida_id)
+    console.log("material.cfg_unidades_medida:", material.cfg_unidades_medida)
+    console.log("unidadesMedida array:", unidadesMedida)
+    
+    // Primero intentar obtener de cfg_unidades_medida (relación incluida)
+    if (material.cfg_unidades_medida?.nombre_unidad) {
+      console.log("✅ Encontrado en cfg_unidades_medida:", material.cfg_unidades_medida.nombre_unidad)
+      return material.cfg_unidades_medida.nombre_unidad
+    }
+    
+    // Si no está disponible, buscar en el array de unidades por unidad_medida_id
+    const unidadEncontrada = unidadesMedida.find(u => u.unidad_medida_id === material.unidad_medida_id)
+    console.log("Unidad encontrada en array:", unidadEncontrada)
+    
+    if (unidadEncontrada?.nombre_unidad) {
+      console.log("✅ Encontrado en array unidadesMedida:", unidadEncontrada.nombre_unidad)
+      return unidadEncontrada.nombre_unidad
+    }
+    
+    console.log("❌ No se encontró unidad, devolviendo 'Sin especificar'")
+    return "Sin especificar"
+  }
+
   // Cargar materiales por categoría
   const loadMaterialesPorCategoria = async (categoriaId: number) => {
     setLoadingMateriales(true)
     try {
       const materialesCategoria = await materialesApi.getByCategoria(categoriaId)
+      console.log("🔍 Debug loadMaterialesPorCategoria:")
+      console.log("API endpoint:", `/materiales/categoria/${categoriaId}`)
+      console.log("Respuesta completa:", materialesCategoria)
+      console.log("Primer material (ejemplo):", materialesCategoria[0])
+      
       setMaterialesPorCategoria(materialesCategoria.filter((m: Material) => m.estado))
     } catch (err: any) {
       console.error("Error al cargar materiales por categoría:", err)
@@ -650,7 +685,7 @@ export default function NuevaOrdenForm({ onSuccess, standalone }: NuevaOrdenForm
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Unidad de Compra:</span>
                     <span className="font-medium">
-                      {materialEnCreacion.material.cfg_unidades_medida?.nombre_unidad || "N/A"}
+                      {getUnidadMedidaMaterial(materialEnCreacion.material)}
                     </span>
                   </div>
                 </div>

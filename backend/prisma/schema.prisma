@@ -170,7 +170,7 @@ model cmp_sugerencias_compra_det {
   material_id                Int?
   unidad_medida_id           Int?
   proveedor_id               Int?
-  cantidad_neta_sugerida     Decimal?                    @db.Decimal(4, 3)
+  cantidad_neta_sugerida     Decimal?                    @db.Decimal(8, 3)
   fecha_sugerida_ordenar     DateTime?                   @db.Date
   fecha_estimada_llegada     DateTime?                   @db.Date
   oc_detalle_id_generada     Int?
@@ -180,6 +180,7 @@ model cmp_sugerencias_compra_det {
   usuario_creacion           String?                     @db.VarChar(50)
   fecha_modificacion         DateTime?                   @default(now()) @db.Timestamp(6)
   usuario_modificacion       String?                     @db.VarChar(50)
+  precio_unitario_sugerido   Decimal?                    @db.Decimal(10, 3)
   cmp_corridas_planificacion cmp_corridas_planificacion? @relation(fields: [corrida_plan_id], references: [corrida_plan_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_cmp_sugerencias_compra_det_corrida_plan_id")
   mat_materiales             mat_materiales?             @relation(fields: [material_id], references: [material_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_cmp_sugerencias_compra_det_material_id")
   cmp_ordenes_compra_det     cmp_ordenes_compra_det?     @relation(fields: [oc_detalle_id_generada], references: [oc_detalle_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_cmp_sugerencias_compra_det_oc_detalle_id_generada")

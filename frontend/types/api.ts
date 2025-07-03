@@ -241,7 +241,7 @@ export interface CategoriaMaterial {
 export interface Color {
   color_id: number
   nombre_color: string
-  codigo_hex: string
+  codigo_color: string
   estado: boolean
   fecha_creacion: string
   fecha_modificacion: string | null
@@ -319,7 +319,7 @@ export interface Material {
   cfg_colores?: {
     color_id: number
     nombre_color: string
-    codigo_hex: string
+    codigo_color: string
     estado: boolean
   }
   cfg_tallas?: {

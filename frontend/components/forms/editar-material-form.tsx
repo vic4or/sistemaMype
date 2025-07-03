@@ -33,14 +33,12 @@ export default function EditarMaterialForm({ material, open, onOpenChange, onUpd
     descripcion_material: "",
     categoria_material_id: 0,
     unidad_medida_id: 0,
-    unidad_consumo_id: 0,
     stock_actual: 0,
     color_id: 0,
     talla_id: 0,
     ancho_tela_metros: 0,
     rendimiento_tela: 0,
     tipo_tejido_tela: "",
-    factor_conversion_compra: 1,
   })
 
   const [categorias, setCategorias] = useState<CategoriaMaterial[]>([])
@@ -67,14 +65,12 @@ export default function EditarMaterialForm({ material, open, onOpenChange, onUpd
         descripcion_material: material.descripcion_material || "",
         categoria_material_id: material.categoria_material_id || 0,
         unidad_medida_id: material.unidad_medida_id || 0,
-        unidad_consumo_id: material.unidad_consumo_id || 0,
-        stock_actual: material.stock_actual || 0,
+        stock_actual: Number(material.stock_actual) || 0,
         color_id: material.color_id || 0,
         talla_id: material.talla_id || 0,
         ancho_tela_metros: material.ancho_tela_metros || 0,
         rendimiento_tela: material.rendimiento_tela || 0,
         tipo_tejido_tela: material.tipo_tejido_tela || "",
-        factor_conversion_compra: material.factor_conversion_compra || 1,
       })
       
       // Encontrar la categoría seleccionada
@@ -109,7 +105,7 @@ export default function EditarMaterialForm({ material, open, onOpenChange, onUpd
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    const numericFields = ['stock_actual', 'ancho_tela_metros', 'rendimiento_tela', 'factor_conversion_compra']
+    const numericFields = ['stock_actual', 'ancho_tela_metros', 'rendimiento_tela']
     
     setFormData((prev) => ({ 
       ...prev, 
@@ -141,16 +137,12 @@ export default function EditarMaterialForm({ material, open, onOpenChange, onUpd
         descripcion_material: formData.descripcion_material,
         categoria_material_id: formData.categoria_material_id,
         unidad_medida_id: formData.unidad_medida_id,
-        unidad_consumo_id: formData.unidad_consumo_id,
-        // Solo incluir factor de conversión si NO es tela
-        ...(!isTela && { factor_conversion_compra: formData.factor_conversion_compra }),
-        ...(selectedCategory?.tiene_color && formData.color_id && { color_id: formData.color_id }),
-        ...(selectedCategory?.tiene_talla && formData.talla_id && { talla_id: formData.talla_id }),
-        ...(isTela && {
-          ancho_tela_metros: formData.ancho_tela_metros,
-          rendimiento_tela: formData.rendimiento_tela,
-          tipo_tejido_tela: formData.tipo_tejido_tela,
-        }),
+        stock_actual: Number(formData.stock_actual),
+        color_id: formData.color_id,
+        talla_id: formData.talla_id,
+        ancho_tela_metros: formData.ancho_tela_metros,
+        rendimiento_tela: formData.rendimiento_tela,
+        tipo_tejido_tela: formData.tipo_tejido_tela,
       }
 
       const updatedMaterial = await materialesApi.update(material.material_id, updateData)
@@ -273,48 +265,7 @@ export default function EditarMaterialForm({ material, open, onOpenChange, onUpd
                   </SelectContent>
                 </Select>
               </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="unidad_consumo" className="text-right col-span-2">
-                  Unidad Consumo
-                </Label>
-                <Select
-                  value={formData.unidad_consumo_id.toString()}
-                  onValueChange={(value) => handleSelectChange("unidad_consumo_id", value)}
-                  required
-                >
-                  <SelectTrigger className="col-span-2">
-                    <SelectValue placeholder="Unidad" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {unidades.map((unidad) => (
-                      <SelectItem key={unidad.unidad_medida_id} value={unidad.unidad_medida_id.toString()}>
-                        {unidad.abreviatura}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
-
-            {/* Factor de conversión solo para no-telas */}
-            {!isTela && (
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="factor_conversion_compra" className="text-right">
-                  Factor Conversión
-                </Label>
-                <Input
-                  id="factor_conversion_compra"
-                  name="factor_conversion_compra"
-                  type="number"
-                  min="0.0001"
-                  step="0.0001"
-                  value={formData.factor_conversion_compra}
-                  onChange={handleChange}
-                  className="col-span-3"
-                />
-              </div>
-            )}
 
             {selectedCategory?.tiene_color && (
               <div className="grid grid-cols-4 items-center gap-4">

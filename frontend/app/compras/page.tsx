@@ -59,18 +59,6 @@ export default function ComprasPage() {
     }).format(amount)
   }
 
-  // Mapear estados para mostrar
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      PENDIENTE: "bg-yellow-100 text-yellow-800 border-yellow-200",
-      APROBADA: "bg-green-100 text-green-800 border-green-200", 
-      ENTREGADA: "bg-green-100 text-green-900 border-green-300",
-      COMPLETADA: "bg-blue-100 text-blue-800 border-blue-200",
-      RECHAZADA: "bg-red-100 text-red-800 border-red-200"
-    }
-    return colors[status] || "bg-gray-100 text-gray-800 border-gray-200"
-  }
-
   const getStatusText = (status: string) => {
     const texts: Record<string, string> = {
       PENDIENTE: "Pendiente",
@@ -80,6 +68,18 @@ export default function ComprasPage() {
       RECHAZADA: "Rechazada"
     }
     return texts[status] || status
+  }
+
+  // Mapear estado COMPLETADA a completed para usar con StatusBadge
+  const mapStatusToStandard = (status: string) => {
+    const statusMap: Record<string, string> = {
+      PENDIENTE: "pending",
+      APROBADA: "approved", 
+      ENTREGADA: "delivered",
+      COMPLETADA: "completed",
+      RECHAZADA: "rejected"
+    }
+    return statusMap[status] || status.toLowerCase()
   }
 
   const handleView = (order: OrdenCompra) => {
@@ -226,9 +226,10 @@ export default function ComprasPage() {
                     <TableCell>{formatDate(orden.fecha_esperada)}</TableCell>
                     <TableCell>{formatCurrency(parseFloat(orden.monto_total_oc))}</TableCell>
                     <TableCell>
-                      <Badge className={getStatusColor(orden.estado_oc)}>
-                        {getStatusText(orden.estado_oc)}
-                      </Badge>
+                      <StatusBadge 
+                        status={mapStatusToStandard(orden.estado_oc)}
+                        label={getStatusText(orden.estado_oc)}
+                      />
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
@@ -304,9 +305,10 @@ export default function ComprasPage() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Estado</p>
-                  <Badge className={getStatusColor(ordenSeleccionada.estado_oc)}>
-                    {getStatusText(ordenSeleccionada.estado_oc)}
-                  </Badge>
+                  <StatusBadge 
+                    status={mapStatusToStandard(ordenSeleccionada.estado_oc)}
+                    label={getStatusText(ordenSeleccionada.estado_oc)}
+                  />
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Total</p>
